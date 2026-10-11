@@ -55,6 +55,7 @@ from youtab import __version__, add, agent_settings, confine, inside, notes_md
 from youtab.agent import DEFAULT_ENGINE, ENGINES, available_engines
 from youtab.build import page_html, retitle_score, source_link, video_creator
 from youtab.pipeline import STEP_NAMES, Busy, Job, finished_at, rebuildable, retitle, shown_steps
+from youtab.render import favicon_data_uri, favicon_svg
 from youtab.workdir import ID_PATTERN, MAX_JSON_BYTES, load_meta, read_json, save_meta, write_json
 
 # /files/ がそのまま返すファイルの種類。.html は入れない（タブ譜のページは App.page が組み立てる）
@@ -775,6 +776,8 @@ def _page_name(d: Path) -> str | None:
 def make_handler(app: App):
     page = resources.files("youtab").joinpath("templates", "app.html").read_bytes()
     page = page.replace(b"__VERSION__", html.escape(__version__).encode())  # 見出しの横の版
+    page = page.replace(b"__FAVICON__", favicon_data_uri().encode())  # タブ譜のページと同じアイコン
+    icon = favicon_svg()
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "youtab"
@@ -825,10 +828,8 @@ def make_handler(app: App):
             path = unquote(urlparse(self.path).path)
             if path == "/":
                 return self._send(200, page, "text/html; charset=utf-8", PAGE_HEADERS)
-            if path == "/favicon.ico":  # タブ譜のページを単独で開いたときにブラウザが求める
-                self.send_response(HTTPStatus.NO_CONTENT)
-                self.end_headers()
-                return None
+            if path == "/favicon.ico":  # ページの指定を読まずに求めるブラウザに、同じアイコンを返す
+                return self._send(200, icon, "image/svg+xml")
             if path == "/api/jobs":
                 # 普段の値はリクエストのたびに読む（設定を変えると次の更新で表示が変わる）
                 return self._json(

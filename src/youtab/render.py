@@ -26,6 +26,16 @@ def _vendor(name: str) -> bytes:
     return resources.files("youtab").joinpath("templates", "vendor", name).read_bytes()
 
 
+def favicon_svg() -> bytes:
+    """画面とタブ譜のページで共通のアイコン（templates/favicon.svg）。"""
+    return resources.files("youtab").joinpath("templates", "favicon.svg").read_bytes()
+
+
+def favicon_data_uri() -> str:
+    """アイコンを埋め込む data URI。タブ譜のページは 1 ファイルで持ち出すので、別のファイルを参照しない。"""
+    return "data:image/svg+xml;base64," + base64.b64encode(favicon_svg()).decode("ascii")
+
+
 def _js_string_literal(value: str) -> str:
     """<script> の中に置いても安全な JS の文字列リテラル。
 
@@ -72,6 +82,7 @@ def render_html(
         source_creator=source_creator,
         generated_at=generated_at or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         alphatab_version=ALPHATAB_VERSION,
+        favicon_data_uri=favicon_data_uri(),
         alphatab_js=_vendor("alphatab.min.js").decode("utf-8"),
         tex_js_literal=_js_string_literal(tex),
         bravura_font_data_uri_js_literal=_js_string_literal(f"data:font/woff2;base64,{font}"),
