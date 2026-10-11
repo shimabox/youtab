@@ -131,8 +131,10 @@
     .picker .pick-custom { width: auto; }
   }
 
-  .layout { display: grid; grid-template-columns: 290px 1fr; gap: 18px; align-items: start; }
-  @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+  /* 詳細の列は minmax(0, 1fr) にして、中身（ログの長い行など）に押されて広がらないようにする。
+     広がると同じ列のタブ譜の枠の幅も変わり、タブ譜が組み直される */
+  .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
   /* 曲を選んでいない（案内が出ている）ときは、一覧と案内の箱の高さをそろえ、案内を上下の中央に置く。
      曲を選んだら、一覧が詳細の長さまで伸びないよう、上そろえのままにする */
   .layout:has(#detail .welcome) { align-items: stretch; }
@@ -164,7 +166,7 @@
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 18px 18px; }
   .panel + .panel { margin-top: 18px; }
   .head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 16px 0 6px; }
-  .head h3 { margin: 0; font-size: 1.15rem; flex: 1 1 320px; }
+  .head h3 { margin: 0; font-size: 1.15rem; flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
   .sub { color: var(--muted); font-size: 0.82rem; margin: 0 0 12px; }
 
   ol.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
@@ -187,7 +189,8 @@
   .actions select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
   /* やり直しの行。曲の情報との間に線を引き、見出し・段とエージェント・モデルと推論の強さ・ボタンの順に積む。
      ボタンは文言が段の名前で長さを変えるので、.pick-row に入れず、いつも独立した段の左に置く */
-  .actions.retry { flex-direction: column; align-items: stretch; gap: 8px; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
+  /* 折り返し（.actions の flex-wrap）を残すと、各段の幅が中身の幅になり、狭い画面で select がパネルからはみ出す */
+  .actions.retry { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 8px; border-top: 1px solid var(--line); margin-top: 16px; padding-top: 14px; }
   .actions .retry-main { display: flex; gap: 8px 10px; flex-wrap: wrap; align-items: center; }
   .retry-main .pick { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--muted); min-width: 0; max-width: 100%; }
   .retry-main .pick select { font-size: 0.86rem; padding: 7px 8px; min-width: 0; max-width: 100%; }
@@ -256,8 +259,12 @@
 
   .result .head a { font-size: 0.88rem; }
   .result iframe { width: 100%; height: 78vh; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-  /* 読み込み中の新しいタブ譜は、高さを取らずに隠しておく（読み終えたら前のパネルと差し替える） */
-  .result.loading { height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; visibility: hidden; }
+  /* 読み込み中の新しいタブ譜は、高さを取らずに隠しておく（読み終えたら前のパネルと差し替える）。
+     左右の余白と枠線は残す（枠の幅が見せた後と変わると、タブ譜が組み直される） */
+  .result.loading {
+    height: 0; margin: 0; padding-top: 0; padding-bottom: 0; border-top-width: 0; border-bottom-width: 0;
+    overflow: hidden; visibility: hidden;
+  }
   /* 曲を切り替えて詳細を待つ間は、前の曲の表示を残したまま薄くし、触れないようにする（空にして縮ませない） */
   #detail.switching { opacity: 0.55; pointer-events: none; }
   @media (prefers-reduced-motion: no-preference) {
@@ -269,6 +276,7 @@
   pre.log {
     background: var(--code-bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0 0;
     max-height: 340px; overflow: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+    overflow-wrap: anywhere;  /* 切れ目のない長い行（パスなど）も欄の幅で折り返す */
     overflow-anchor: none;  /* 位置は updateLog が決める（ブラウザの自動の補正と重ねない） */
   }
   pre.log > div { min-height: 1.5em; }  /* 空の行もつぶさない */
@@ -284,7 +292,7 @@
   .notes .note ul, .notes .note ol { margin: 4px 0; padding-left: 1.4em; }
   .notes .note li { margin: 1px 0; overflow-wrap: anywhere; }
   .notes .note code { font: 0.8rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); border-radius: 4px; padding: 0 4px; }
-  .notes .note pre { background: var(--code-bg); border-radius: 6px; padding: 8px 10px; margin: 6px 0; overflow: auto; white-space: pre-wrap; }
+  .notes .note pre { background: var(--code-bg); border-radius: 6px; padding: 8px 10px; margin: 6px 0; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
   .notes .note pre code { background: none; padding: 0; }
   .welcome { color: var(--muted); margin: 0; padding: 20px 0; }
   footer.disclaimer {
