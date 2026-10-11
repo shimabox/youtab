@@ -1,9 +1,11 @@
+import base64
 import json
+import re
 
 import pytest
 
 from youtab import build, verify
-from youtab.render import render_html, tuning_label
+from youtab.render import favicon_svg, render_html, tuning_label
 from youtab.workdir import frame_name, parse_frame_name
 
 
@@ -326,6 +328,13 @@ def test_verify_fits_offset_and_flags_far_marks(tmp_path, capsys):
     assert abs(timing["offset"] - 10.1) < 0.2
     assert timing["order"] == [1, 2, 3, 2, 3, 4]
     assert verify.run_verify(wd, ["4=26"]) == 1
+
+
+def test_rendered_page_embeds_the_app_icon():
+    """タブ譜のページは画面と同じアイコンを data URI で持つ（ダウンロードや移動をしても出る）。"""
+    html = render_html("r.1", title="t", tempo=100, tuning="e4 b3 g3 d3 a2 e2")
+    icon = re.search(r'<link rel="icon" href="data:image/svg\+xml;base64,([A-Za-z0-9+/=]+)">', html)
+    assert icon and base64.b64decode(icon.group(1)) == favicon_svg()
 
 
 def test_render_escapes_script_closing_text():

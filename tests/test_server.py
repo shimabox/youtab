@@ -12,6 +12,7 @@ import pytest
 import youtab
 
 from youtab import build, pipeline, server
+from youtab.render import favicon_data_uri, favicon_svg
 
 
 @pytest.fixture
@@ -75,6 +76,9 @@ def test_server_page_and_job_flow(running_server):
     status, body = call(base + "/")
     assert status == 200 and "タブ譜を作る" in body.decode()
     assert f'<span class="version">v{youtab.__version__}</span>' in body.decode()  # 見出しの横の版
+    assert f'<link rel="icon" href="{favicon_data_uri()}">' in body.decode()  # タブ譜のページと同じアイコン
+    with urllib.request.urlopen(base + "/favicon.ico") as r:
+        assert r.headers["Content-Type"] == "image/svg+xml" and r.read() == favicon_svg()
 
     assert upload(base, header=False)[0] == 403  # 画面以外からの POST は受けない
     assert upload(base, extra={"Origin": "https://evil.example"})[0] == 403  # 別のサイトのページからの POST
@@ -702,7 +706,7 @@ def test_every_response_is_not_sniffed_and_grants_no_cors(served):
     page = {"Origin": "null"}
     cases = [
         ("GET", "/", None, {}, 200),
-        ("GET", "/favicon.ico", None, {}, 204),
+        ("GET", "/favicon.ico", None, {}, 200),
         ("GET", "/api/jobs", None, page, 200),
         ("GET", f"/api/jobs/{JOB}", None, page, 200),
         ("GET", "/api/jobs/nothing", None, {}, 404),
