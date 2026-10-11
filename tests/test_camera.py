@@ -5,8 +5,8 @@ import pytest
 from PIL import Image, ImageDraw
 from synth import TAB_LINES, camera_frame, frame, video_noise, write_frames
 
-from videotab import camera, cli, pages, strip
-from videotab.workdir import list_frames
+from youtab import camera, cli, pages, strip
+from youtab.workdir import list_frames
 
 
 @pytest.mark.parametrize("dark", [False, True])

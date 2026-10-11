@@ -1,39 +1,39 @@
-# videotab の書き起こし手順（エージェント向け）
+# youtab の書き起こし手順（エージェント向け）
 
 手元の動画ファイルから、画面に写るタブ譜を 1 枚の楽譜（alphaTab の HTML＋alphaTex）にする手順です。Claude Code でも Codex でも同じ手順で進めます。
 
-- 機械でできること（動画の取り込み・切り出し・帯と線の検出・ページ分け・検査・組み立て・時刻の照合）は `videotab` コマンドが行います。
+- 機械でできること（動画の取り込み・切り出し・帯と線の検出・ページ分け・検査・組み立て・時刻の照合）は `youtab` コマンドが行います。
 - フレット番号・リズム・記号を画像から読むのはエージェントの仕事です。読んだ結果は小節ごとの alphaTex の JSON に書きます。
-- ふだんは画面（`uv run videotab serve`）か `uv run videotab run 動画.mp4` が、この手順どおりに読み手とまとめ役のエージェントを起動します（`src/videotab/read.py`）。読み手として起動されたときは、プロンプトで指示された節（多くは「3. 読み取りの決まり」）に従ってください。以下は、人やエージェントが手で進めるときの全体の手順です。
+- ふだんは画面（`uv run youtab serve`）か `uv run youtab run 動画.mp4` が、この手順どおりに読み手とまとめ役のエージェントを起動します（`src/youtab/read.py`）。読み手として起動されたときは、プロンプトで指示された節（多くは「3. 読み取りの決まり」）に従ってください。以下は、人やエージェントが手で進めるときの全体の手順です。
 - 動画・画像・作ったタブ譜は `work/` の下に置きます。市販曲の素材なので、リポジトリや会話の外に出しません。
 
-コマンドはリポジトリのルートで `uv run videotab ...` として実行します。
+コマンドはリポジトリのルートで `uv run youtab ...` として実行します。
 
 ## 開発の決まり（このリポジトリを変更するとき）
 
-書き起こしではなく、videotab 自体を変更するときの決まりです。Claude Code でも Codex でも同じです。使い方（画面 `videotab serve`・通し実行 `videotab run`・コマンド）は [README.md](README.md) にあります。
+書き起こしではなく、youtab 自体を変更するときの決まりです。Claude Code でも Codex でも同じです。使い方（画面 `youtab serve`・通し実行 `youtab run`・コマンド）は [README.md](README.md) にあります。
 
 - 会話・ドキュメント・コミットメッセージ・PR は日本語。
 - 取り込んだ動画・切り出した画像・作ったタブ譜は `work/` 以下に置き、コミットしない（市販曲の素材なので）。
 - GitHub への公開（リポジトリ作成・push）はユーザーに確認してから行う。
 - テストは `uv run pytest`。画像処理のテストは合成画像で行い、市販曲の素材をテストに使わない。読み取りのテストは偽のエージェントで行い、本物のエージェントを起動しない。
-- 読み取りで起動するエージェントに許す操作は、画像と手順書を読む・決まったファイルに書く・`videotab check` / `zoom` の実行だけ（`src/videotab/agent.py`）。広げるときは理由を書く。
+- 読み取りで起動するエージェントに許す操作は、画像と手順書を読む・決まったファイルに書く・`youtab check` / `zoom` の実行だけ（`src/youtab/agent.py`）。広げるときは理由を書く。
 
-読み取りで起動するエージェントのプロンプトに入れるのは、番号の付いた節だけです（`src/videotab/read.py`）。Codex の読み手にも、この AGENTS.md を自動では読み込ませません（作業フォルダと、それを含むリポジトリを untrusted として起動します。`src/videotab/agent.py`）。
+読み取りで起動するエージェントのプロンプトに入れるのは、番号の付いた節だけです（`src/youtab/read.py`）。Codex の読み手にも、この AGENTS.md を自動では読み込ませません（作業フォルダと、それを含むリポジトリを untrusted として起動します。`src/youtab/agent.py`）。
 
 ## 1. 動画から拡大画像まで
 
 ```sh
-uv run videotab add 動画.mp4      # 新しい作業フォルダ work/XXXX/ に動画を取り込み、ID（XXXX）を表示
-uv run videotab frames XXXX       # 1 秒 1 枚（--fps で変更）
-uv run videotab strip XXXX        # 帯と弦の線の位置
-uv run videotab pages XXXX        # ページ分けと拡大画像
+uv run youtab add 動画.mp4      # 新しい作業フォルダ work/XXXX/ に動画を取り込み、ID（XXXX）を表示
+uv run youtab frames XXXX       # 1 秒 1 枚（--fps で変更）
+uv run youtab strip XXXX        # 帯と弦の線の位置
+uv run youtab pages XXXX        # ページ分けと拡大画像
 ```
 
 - `XXXX` は取り込んだときに表示される ID（ファイル名の英数字と 6 桁の乱数）です。作業フォルダのパスでも指せます。
 - `add` には `--title`（題名。既定はファイル名）・`--creator`（動画の作成者）・`--source-url`（元動画のページ）を付けられます。
 
-- 画像フォルダや画像の ZIP が手元にある場合は、`uv run videotab frames 名前 --from フォルダかZIP` で取り込めます（ファイル名 `NNNN_MMmSSsmmm.png` の時刻を使います）。
+- 画像フォルダや画像の ZIP が手元にある場合は、`uv run youtab frames 名前 --from フォルダかZIP` で取り込めます（ファイル名 `NNNN_MMmSSsmmm.png` の時刻を使います）。
 - `strip` のあとで `work/XXXX/strip/check_*.png` を開きます。桃色の枠が帯、左右の緑と青の印が 1〜6 弦の線です。ずれていたら `--band Y0 Y1` で帯のおおよその範囲を指定して、やり直します。
 - `pages` の結果は `work/XXXX/pages/index.md` にあります。ページごとに次の情報が並びます。
   - 時刻
@@ -48,7 +48,7 @@ uv run videotab pages XXXX        # ページ分けと拡大画像
 
 ## 2. 見出しを決める
 
-`work/XXXX/score.json` を書きます。初めての `videotab build` で雛形ができるので、それを埋めても構いません。
+`work/XXXX/score.json` を書きます。初めての `youtab build` で雛形ができるので、それを埋めても構いません。
 
 ```json
 {"title": "曲名", "subtitle": "作成者 さんの動画のタブ譜から書き起こし", "tab_by": "作成者", "tempo": 137, "time_signature": [4, 4], "tuning": "e4 b3 g3 d3 a2 e2", "capo": 0}
@@ -104,7 +104,7 @@ uv run videotab pages XXXX        # ページ分けと拡大画像
 演奏位置の枠や、赤字になった音で数字が読めないときは、同じページの別のフレームを拡大して確かめます。
 
 ```sh
-uv run videotab zoom XXXX フレーム番号    # work/XXXX/pages/zoom/ に同じ倍率で出力
+uv run youtab zoom XXXX フレーム番号    # work/XXXX/pages/zoom/ に同じ倍率で出力
 ```
 
 ### 記法
@@ -149,7 +149,7 @@ uv run videotab zoom XXXX フレーム番号    # work/XXXX/pages/zoom/ に同�
 ### 書いたら検査する
 
 ```sh
-uv run videotab check work/XXXX/parts/part_X.json
+uv run youtab check work/XXXX/parts/part_X.json
 ```
 
 - 「誤り」が 0 になるまで直します。
@@ -175,7 +175,7 @@ uv run videotab check work/XXXX/parts/part_X.json
 ## 5. つないで出力する
 
 ```sh
-uv run videotab build XXXX
+uv run youtab build XXXX
 ```
 
 - 重なった小節の内容が違うと、食い違いの一覧を出して止まります（`conflicts.json` にも出ます）。
@@ -189,7 +189,7 @@ uv run videotab build XXXX
 ## 6. 動画の時刻と照らす
 
 ```sh
-uv run videotab verify XXXX --mark 10=57 --mark 41=2:49
+uv run youtab verify XXXX --mark 10=57 --mark 41=2:49
 ```
 
 - 繰り返しとテンポの変化を展開して、各小節が鳴り始める時刻を出します。

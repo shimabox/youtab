@@ -8,7 +8,7 @@ from http.server import ThreadingHTTPServer
 import pytest
 from test_server import call, saved_job, wait_idle
 
-from videotab import pipeline, server
+from youtab import pipeline, server
 
 JOB, OTHER = "abcdefghijk", "bbbbbbbbbbb"
 
@@ -125,9 +125,9 @@ def test_cancel_refuses_songs_not_running_here(served):
     saved_job(s.root, status="done")
     code, body = cancel(s, JOB)
     assert code == 400 and "実行中でも順番待ちでもありません" in json.loads(body)["error"]
-    with pipeline.Job(s.root / JOB).hold():  # videotab run などが実行中
+    with pipeline.Job(s.root / JOB).hold():  # youtab run などが実行中
         code, body = cancel(s, JOB)
-        assert code == 409 and "videotab run" in json.loads(body)["error"]
+        assert code == 409 and "youtab run" in json.loads(body)["error"]
     assert cancel(s, "zzzzzzzzzzz")[0] == 404
     assert cancel(s, "..%2f..")[0] == 404
     assert detail(s, JOB)["status"] == "done"

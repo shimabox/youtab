@@ -1,4 +1,4 @@
-"""画面（videotab serve）のリンク対策: /files/、起動時の一時フォルダの掃除、順番待ちの中断の記録。"""
+"""画面（youtab serve）のリンク対策: /files/、起動時の一時フォルダの掃除、順番待ちの中断の記録。"""
 
 import json
 import os
@@ -12,7 +12,7 @@ from fakes import send
 from test_links import fake_ffmpeg, stages_in
 from trees import make_outside, snapshot
 
-from videotab import frames, inside, pipeline, server
+from youtab import frames, inside, pipeline, server
 
 JOB = "abcdefghijk"
 
@@ -113,12 +113,12 @@ def test_files_are_sandboxed_and_refusals_are_not_sniffed(files):
 def test_startup_removes_unused_temporary_folders_and_does_not_list_them(tmp_path, monkeypatch):
     monkeypatch.setattr(pipeline.Job, "run", lambda self: True)
     root = tmp_path / "work"
-    (root / ".videotab-tmp-old" / "sub").mkdir(parents=True)
-    (root / ".videotab-tmp-old" / "raw_00001.png").write_bytes(b"x")
-    (root / ".videotab-tmp-half").mkdir()
-    (root / ".videotab-tmp-half" / ".lock").write_bytes(b"")
+    (root / ".youtab-tmp-old" / "sub").mkdir(parents=True)
+    (root / ".youtab-tmp-old" / "raw_00001.png").write_bytes(b"x")
+    (root / ".youtab-tmp-half").mkdir()
+    (root / ".youtab-tmp-half" / ".lock").write_bytes(b"")
     out = make_outside(tmp_path)
-    (root / ".videotab-tmp-old" / "sub" / "to_out").symlink_to(out / "d")
+    (root / ".youtab-tmp-old" / "sub" / "to_out").symlink_to(out / "d")
     before = snapshot(out)
     (root / JOB).mkdir()
     (root / JOB / "meta.json").write_text(json.dumps({"id": JOB, "title": "曲"}))

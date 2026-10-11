@@ -26,9 +26,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from videotab import confine, inside
-from videotab.strip import line_offset, load_rgb, sample_frames, to_gray
-from videotab.workdir import Frame, fmt_time, json_text
+from youtab import confine, inside
+from youtab.strip import line_offset, load_rgb, sample_frames, to_gray
+from youtab.workdir import Frame, fmt_time, json_text
 
 INK_DIFF = 60.0  # 地の明るさからこれだけ離れた画素をインクとみなす
 TARGET_SPACING = 30.0  # 拡大後の弦の線の間隔（px）
@@ -52,7 +52,7 @@ class Setup:
         """meta.json の strip から作る。frames を渡すと、shifts が今のフレームと合うかを確かめる。"""
         s = meta.get("strip")
         if not s:
-            raise SystemExit("帯の位置がまだ決まっていません（先に videotab strip）")
+            raise SystemExit("帯の位置がまだ決まっていません（先に youtab strip）")
         shifts = s.get("shifts") or []
         corrections = {row[0]: (*row[1:4], row[4] if len(row) > 4 else 1.0)
                        for row in s.get("corrections", [])}
@@ -77,7 +77,7 @@ class Setup:
     def correct(self, rgb: np.ndarray, index: int) -> np.ndarray:
         if not self.corrections:
             return rgb
-        from videotab.camera import straighten
+        from youtab.camera import straighten
 
         dy, slope, _, scale = self.corrections[index]
         return straighten(rgb, slope, dy, self.background, scale)

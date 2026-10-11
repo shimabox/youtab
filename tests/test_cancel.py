@@ -9,8 +9,8 @@ import threading
 import pytest
 from fakes import FakeAgent, make_work
 
-from videotab import agent, cancel, pipeline, read
-from videotab.cancel import Cancel, Cancelled
+from youtab import agent, cancel, pipeline, read
+from youtab.cancel import Cancel, Cancelled
 
 SLEEPER = "import time\nprint('start', flush=True)\ntime.sleep(30)\n"
 
@@ -165,16 +165,16 @@ def test_run_agent_timeout_signals_the_agent_and_its_descendants(tmp_path, monke
 
 
 def test_cli_command_gets_interrupt_and_cleans_up(tmp_path, monkeypatch):
-    # videotab のコマンドには SIGINT を送る（Python の後始末が走る）
+    # youtab のコマンドには SIGINT を送る（Python の後始末が走る）
     marker = tmp_path / "cleaned"
-    script = tmp_path / "videotab_cmd"
+    script = tmp_path / "youtab_cmd"
     script.write_text(
         f"#!{sys.executable}\nimport time\nprint('start', flush=True)\n"
         f"try:\n    time.sleep(30)\nexcept KeyboardInterrupt:\n    open({str(marker)!r}, 'w').close()\n    raise\n",
         encoding="utf-8",
     )
     script.chmod(0o755)
-    monkeypatch.setattr(pipeline, "videotab_bin", lambda: str(script))
+    monkeypatch.setattr(pipeline, "youtab_bin", lambda: str(script))
     job = pipeline.Job.create(tmp_path / "work" / "abcdefghijk")
     errors = []
 

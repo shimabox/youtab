@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# videotab セットアップスクリプト(macOS / Linux)
+# youtab セットアップスクリプト(macOS / Linux)
 #
 # やること:
 #   1. uv(Python パッケージマネージャ)があるか確認。無ければ公式インストーラの
@@ -18,7 +18,7 @@ say()  { printf '\033[1m%s\033[0m\n' "$*"; }
 ok()   { printf '  ✓ %s\n' "$*"; }
 warn() { printf '  ! %s\n' "$*"; }
 
-say "videotab セットアップを開始します"
+say "youtab セットアップを開始します"
 
 # --- 1. uv -----------------------------------------------------------------
 if command -v uv >/dev/null 2>&1; then
@@ -110,6 +110,6 @@ cat <<'DONE'
     make web                   # ブラウザ画面を起動(おすすめ)
     make run VIDEO=動画.mp4    # 画面なしで、動画ファイルの取り込みからタブ譜まで通しで実行
 
-  make が無い環境では uv run videotab serve / uv run videotab run 動画.mp4 でも同じです。
+  make が無い環境では uv run youtab serve / uv run youtab run 動画.mp4 でも同じです。
 
 DONE

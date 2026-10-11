@@ -14,8 +14,8 @@ import pytest
 from conftest import PROBED
 from PIL import Image
 
-from videotab import add, frames, inside
-from videotab.workdir import ID_PATTERN
+from youtab import add, frames, inside
+from youtab.workdir import ID_PATTERN
 
 
 def leftovers(root):
@@ -112,7 +112,7 @@ def test_new_id_starts_with_alnum_and_matches_pattern(name, stem):
 
 
 def test_id_pattern_refuses_names_that_look_like_options_or_hidden():
-    for bad in ("-x", "_x", ".videotab-tmp-0", ".deleting-a", "a/b", "", "a" * 65, "練習"):
+    for bad in ("-x", "_x", ".youtab-tmp-0", ".deleting-a", "a/b", "", "a" * 65, "練習"):
         assert not ID_PATTERN.fullmatch(bad), bad
 
 

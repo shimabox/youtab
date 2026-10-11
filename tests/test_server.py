@@ -9,9 +9,9 @@ from http.server import ThreadingHTTPServer
 
 import pytest
 
-import videotab
+import youtab
 
-from videotab import build, pipeline, server
+from youtab import build, pipeline, server
 
 
 @pytest.fixture
@@ -39,14 +39,14 @@ def running_server(tmp_path, monkeypatch, fake_probe):
     httpd.shutdown()
 
 def call(url, body=None, header=True, extra=None, method=None):
-    """画面の代わりに API を呼ぶ。header は、本文があるときか DELETE のときに X-Videotab を付けるか。"""
+    """画面の代わりに API を呼ぶ。header は、本文があるときか DELETE のときに X-Youtab を付けるか。"""
     req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(), method=method)
     for k, v in (extra or {}).items():
         req.add_header(k, v)
     if body is not None:
         req.add_header("Content-Type", "application/json")
     if header and (body is not None or method == "DELETE"):
-        req.add_header("X-Videotab", "1")
+        req.add_header("X-Youtab", "1")
     try:
         with urllib.request.urlopen(req) as r:
             return r.status, r.read()
@@ -60,7 +60,7 @@ def upload(base, data=b"video", header=True, extra=None, **query):
     query = {"name": "テスト曲.mp4", **query}
     req = urllib.request.Request(f"{base}/api/uploads?{urlencode(query)}", data=data, method="POST")
     if header:
-        req.add_header("X-Videotab", "1")
+        req.add_header("X-Youtab", "1")
     for k, v in (extra or {}).items():
         req.add_header(k, v)
     try:
@@ -74,7 +74,7 @@ def test_server_page_and_job_flow(running_server):
     base, root, ran = running_server
     status, body = call(base + "/")
     assert status == 200 and "タブ譜を作る" in body.decode()
-    assert f'<span class="version">v{videotab.__version__}</span>' in body.decode()  # 見出しの横の版
+    assert f'<span class="version">v{youtab.__version__}</span>' in body.decode()  # 見出しの横の版
 
     assert upload(base, header=False)[0] == 403  # 画面以外からの POST は受けない
     assert upload(base, extra={"Origin": "https://evil.example"})[0] == 403  # 別のサイトのページからの POST
@@ -172,7 +172,7 @@ def test_detail_finished_is_null_unless_finished(app, case):
     if case == "queued":
         app.waiting.append("abcdefghijk")
     with job.lock_path.open("a") as f:
-        if case == "locked":  # videotab run など、別のプロセスで実行中
+        if case == "locked":  # youtab run など、別のプロセスで実行中
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         detail = app.detail("abcdefghijk")
     expected = {"saved_running": "failed", "running": "running", "queued": "queued", "locked": "running"}
@@ -226,7 +226,7 @@ def page_section(title):
     """app.html の「// --- title」から次の「// ---」までの本文。"""
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     start = page.index(f"// --- {title}\n")
     end = page.index("// ---", start + 1)
     return page[start:end]
@@ -331,7 +331,7 @@ def test_delete_refuses_running_queued_and_locked_songs(served):
     s.release.set()
     wait_idle(s.app)
 
-    with pipeline.Job(s.root / JOB).hold():  # videotab run などが job.lock を握っている
+    with pipeline.Job(s.root / JOB).hold():  # youtab run などが job.lock を握っている
         code, body = delete(s, JOB)
         assert code == 409 and "消せません" in json.loads(body)["error"]
     assert (s.root / JOB / "job.json").exists()
@@ -409,15 +409,15 @@ def test_delete_refuses_song_queued_through_link(served, state):
     assert tree(s.root / JOB) == before
 
 
-def test_delete_refuses_while_videotab_run_holds_lock(served, monkeypatch):
-    from videotab import cli
+def test_delete_refuses_while_youtab_run_holds_lock(served, monkeypatch):
+    from youtab import cli
 
     s = served
     saved_job(s.root, status="failed")
     seen = []
 
     def run_and_try_delete(self):
-        # videotab run は準備から実行の終わりまで job.lock を握っている。その間に画面から消そうとする
+        # youtab run は準備から実行の終わりまで job.lock を握っている。その間に画面から消そうとする
         seen.append(delete(s, JOB)[0])
         return True
 
@@ -534,7 +534,7 @@ def test_delete_failure_is_500_and_leftover_is_hidden(served, monkeypatch):
 
 
 def request(url, method="GET", headers=None, body=None):
-    """(ステータス, 見出し, 本文) を返す。見出しは付けたものだけ（X-Videotab も自動では付けない）。"""
+    """(ステータス, 見出し, 本文) を返す。見出しは付けたものだけ（X-Youtab も自動では付けない）。"""
     req = urllib.request.Request(url, data=body, method=method)
     for k, v in (headers or {}).items():
         req.add_header(k, v)
@@ -550,7 +550,7 @@ def grants_cors(headers):
 
 
 # 読み手が置けるページの例。返さないことを確かめるだけで、テストでは動かさない
-EVIL = b'<script>fetch("/api/jobs/abcdefghijk", {method: "DELETE", headers: {"X-Videotab": "1"}})</script>'
+EVIL = b'<script>fetch("/api/jobs/abcdefghijk", {method: "DELETE", headers: {"X-Youtab": "1"}})</script>'
 TEX = '\\title "曲"\n\\tempo 120\n.\n\\tuning e4 b3 g3 d3 a2 e2\n\\ts 4 4\nr.1\n'
 SERVED_FILES = {
     "p001.png": b"\x89PNG\r\n\x1a\n",
@@ -601,7 +601,7 @@ def test_tab_page_is_built_from_alphatex_and_stored_html_is_never_served(served)
     status, headers, body = request(page_url)
     page = body.decode("utf-8")
     assert status == 200 and headers["Content-Type"] == "text/html; charset=utf-8"
-    assert EVIL not in body and "<title>曲 - videotab</title>" in page and "小節数: 1" in page
+    assert EVIL not in body and "<title>曲 - youtab</title>" in page and "小節数: 1" in page
     assert shown() == (f"{JOB}.html", [f"{JOB}.html"])
     assert request(f"{s.base}/files/{JOB}/evil.html")[0] == 404  # ほかの .html は返さない
     # 読み手が書いた alphaTex と meta.json は、ページの中で文字として扱う
@@ -668,7 +668,7 @@ def test_tab_page_is_the_same_as_the_built_html(served, capsys):
 
 
 def test_requests_from_sandboxed_page_are_refused(served):
-    """/files/ のページからのリクエストは Origin が null になる。X-Videotab を付けても断り、何も変えない。"""
+    """/files/ のページからのリクエストは Origin が null になる。X-Youtab を付けても断り、何も変えない。"""
     s = served
     saved_job(s.root, status="failed")
     before = tree(s.root)
@@ -684,11 +684,11 @@ def test_requests_from_sandboxed_page_are_refused(served):
 
 @pytest.mark.parametrize("path", ["/", "/api/jobs", f"/api/jobs/{JOB}", f"/api/jobs/{JOB}/retry", f"/files/{JOB}/{JOB}.html"])
 def test_preflight_is_not_granted(served, path):
-    """別の出どころから X-Videotab 付きで送る前の事前確認（OPTIONS）に応じない。"""
+    """別の出どころから X-Youtab 付きで送る前の事前確認（OPTIONS）に応じない。"""
     s = served
     saved_job(s.root)
     (s.root / JOB / f"{JOB}.alphatex").write_text(TEX, encoding="utf-8")
-    ask = {"Origin": "null", "Access-Control-Request-Method": "DELETE", "Access-Control-Request-Headers": "content-type, x-videotab"}
+    ask = {"Origin": "null", "Access-Control-Request-Method": "DELETE", "Access-Control-Request-Headers": "content-type, x-youtab"}
     status, headers, _ = request(s.base + path, "OPTIONS", ask)
     assert not 200 <= status < 300
     assert grants_cors(headers) == []
@@ -709,12 +709,12 @@ def test_every_response_is_not_sniffed_and_grants_no_cors(served):
         ("GET", f"/files/{JOB}/{JOB}.html", None, page, 200),
         ("GET", f"/files/{JOB}/job.json", None, {}, 404),
         ("GET", "/api/jobs", None, {"Host": "evil.example"}, 403),
-        ("POST", "/api/jobs", b"{}", {**page, "X-Videotab": "1"}, 403),
-        ("POST", "/api/jobs", b"{}", {"X-Videotab": "1"}, 404),  # 曲を作る口は /api/uploads だけ
-        ("POST", "/api/uploads?name=a.mp4", b"x", {**page, "X-Videotab": "1"}, 403),
-        ("POST", "/api/uploads?name=a.txt", b"x", {"X-Videotab": "1"}, 400),
-        ("POST", f"/api/jobs/{JOB}/retry", b"{", {"X-Videotab": "1"}, 400),
-        ("DELETE", f"/api/jobs/{JOB}", None, {**page, "X-Videotab": "1"}, 403),
+        ("POST", "/api/jobs", b"{}", {**page, "X-Youtab": "1"}, 403),
+        ("POST", "/api/jobs", b"{}", {"X-Youtab": "1"}, 404),  # 曲を作る口は /api/uploads だけ
+        ("POST", "/api/uploads?name=a.mp4", b"x", {**page, "X-Youtab": "1"}, 403),
+        ("POST", "/api/uploads?name=a.txt", b"x", {"X-Youtab": "1"}, 400),
+        ("POST", f"/api/jobs/{JOB}/retry", b"{", {"X-Youtab": "1"}, 400),
+        ("DELETE", f"/api/jobs/{JOB}", None, {**page, "X-Youtab": "1"}, 403),
         ("OPTIONS", "/api/jobs", None, page, 501),  # 標準ライブラリが返すエラー
         ("PUT", "/api/jobs", b"{}", page, 501),
     ]
@@ -747,7 +747,7 @@ def test_result_iframe_is_sandboxed_like_files():
     import re
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     frames = re.findall(r'el\("iframe", (\{[^}]*\})', page)
     assert len(frames) == 1 and "<iframe" not in page  # タブ譜の iframe はここで作るものだけ
     attr = re.search(r'sandbox: "([^"]*)"', frames[0])
@@ -796,7 +796,7 @@ def test_retry_row_has_title_named_fields_and_button_saying_the_step():
     import re
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     build = page_section("一覧と詳細").split("function buildRetryRow(")[1].split("\n  }\n\n")[0]
     # 見出しと、段と AI の名前。段の選択肢は段の名前だけ（説明は title）で、読み上げ名は見える名前とそろえる
     assert 'el("span", { class: "info-title", text: "やり直す" })' in build
@@ -962,7 +962,7 @@ def test_retry_refuses_screen_for_documents_and_bad_source_modes(idle_app):
     with pytest.raises(ValueError, match="パートを指定できません"):
         idle_app.retry(JOB, "strip", None, source_mode="video", paper_choice={"part": "Bass", "strings": 4})
     assert ((job.workdir / "meta.json").read_bytes(), job.path.read_bytes()) == before and idle_app.waiting == []
-    with job.hold():  # videotab run など、別の実行が握っている
+    with job.hold():  # youtab run など、別の実行が握っている
         with pytest.raises(pipeline.Busy):
             idle_app.retry(JOB, "strip", None, source_mode="paper")
     assert (job.workdir / "meta.json").read_bytes() == before[0]
@@ -1027,7 +1027,7 @@ def test_detail_tells_video_from_document_and_shows_checked_source_choice(idle_a
 def test_retry_row_lets_only_video_songs_change_source_mode_and_shows_part_fields_for_paper():
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     build = page_section("一覧と詳細").split("function buildRetryRow(")[1].split("\n  }\n\n")[0]
     # 楽譜の種類は動画の曲だけに出し、今の値を初期値にする
     assert 'var isVideo = d.source_kind !== "document";' in build
@@ -1071,7 +1071,7 @@ def test_picker_explains_model_and_effort_and_sends_effort_values_unchanged():
     # 推論の強さの選択肢は、送る値（英語）のまま、表示にだけ日本語の強弱を添える
     assert 'el("option", { value: v, text: effortText(v) })' in section
     assert "title: MODEL_HELP" in section and "title: EFFORT_HELP" in section
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     assert 'minimal: "最も弱い"' in page and 'max: "最も強い"' in page
     # 通信の失敗は、ブラウザの英語の原文を括弧に回し、日本語の説明と次の操作を先に出す
     assert "サーバーに届きません" not in page

@@ -2,25 +2,25 @@
 
 段ごとにコマンドを 1 つずつ動かす方法と、コマンドの一覧、作業フォルダの中身、セットアップで行うことの説明です。[README に戻る](../README.md)
 
-コマンドは、videotab のフォルダの中で実行します。
+コマンドは、youtab のフォルダの中で実行します。
 
 ## コマンドを 1 つずつ使う
 
 紙の楽譜（写真・PDF・画像 ZIP・紙を撮った動画）の流れと、パートの選び方は [紙の楽譜から書き起こす](paper.md) を見てください。
 
 ```sh
-uv run videotab add 動画.mp4                  # 新しい作業フォルダ work/XXXX/ に取り込み、ID（XXXX）を表示
-uv run videotab frames XXXX                   # 1 秒 1 枚の画像に
-uv run videotab strip XXXX                    # タブの帯と弦の線の位置を検出
-uv run videotab pages XXXX                    # ページに分けて拡大画像を作る
+uv run youtab add 動画.mp4                  # 新しい作業フォルダ work/XXXX/ に取り込み、ID（XXXX）を表示
+uv run youtab frames XXXX                   # 1 秒 1 枚の画像に
+uv run youtab strip XXXX                    # タブの帯と弦の線の位置を検出
+uv run youtab pages XXXX                    # ページに分けて拡大画像を作る
 # ここで AI が拡大画像を読み、work/XXXX/parts/*.json に小節ごとの alphaTex を書く
-uv run videotab check XXXX                    # 拍数・タイ・記法の検査
-uv run videotab build XXXX                    # つないで work/XXXX/XXXX.html と .alphatex を出力
-uv run videotab verify XXXX --mark 10=57      # 繰り返し・テンポを展開した時刻を動画と比べる
+uv run youtab check XXXX                    # 拍数・タイ・記法の検査
+uv run youtab build XXXX                    # つないで work/XXXX/XXXX.html と .alphatex を出力
+uv run youtab verify XXXX --mark 10=57      # 繰り返し・テンポを展開した時刻を動画と比べる
 ```
 
-- `XXXX` は `add` が表示する ID です。`add` は続けるコマンドを `videotab frames <作業フォルダのパス>` の形で表示します。ID の代わりに作業フォルダのパスを渡すと、`--root` で作業フォルダを置く場所（既定は `work/`）を変えたときも同じ作業フォルダを指せます。
-- `-` で始まる名前のファイルは、`uv run videotab add ./-x.mp4` のようにパスで渡します。
+- `XXXX` は `add` が表示する ID です。`add` は続けるコマンドを `youtab frames <作業フォルダのパス>` の形で表示します。ID の代わりに作業フォルダのパスを渡すと、`--root` で作業フォルダを置く場所（既定は `work/`）を変えたときも同じ作業フォルダを指せます。
+- `-` で始まる名前のファイルは、`uv run youtab add ./-x.mp4` のようにパスで渡します。
 
 画像の読み方の決まりは [AGENTS.md](../AGENTS.md) にあります。
 
@@ -41,7 +41,7 @@ uv run videotab verify XXXX --mark 10=57      # 繰り返し・テンポを展�
 | `check ID\|FILE` | 小節ごとの長さ、つながり先のないタイ、記法のくせを検査 |
 | `build ID` | 読み取り結果をつなぐ。重ねて読んだ小節の食い違い・抜け・検査の誤りがあれば一覧にして止める |
 | `verify ID [--mark 小節=秒]` | 繰り返し・テンポ変化を展開した各小節の開始時刻を出し、動画で見た時刻と比べる |
-| `--version` | videotab の版を表示（画面では見出しの横に出る） |
+| `--version` | youtab の版を表示（画面では見出しの横に出る） |
 
 カメラで画面を撮影した動画では、水平な線が見つからないか弱い場合に、約 ±2 度までの傾きを探します。薄い線は周りの背景との明るさの差で見て、照明のむらの影響を抑えます。補正を採用した動画では、フレームごとの傾き・上下の位置・弦の間隔の伸縮を `meta.json` に記録し、`pages` と `zoom` の画像を同じ水平な位置にそろえます。手ぶれだけではページを区切りません。`strip/check_*.png` は元画像に傾いた線の位置を示すので、検出が合っているか確認できます。`--band` を指定した場合も、この補正を使います。画面を斜めから撮って形が台形に大きく歪んだものや、横方向の手ぶれには対応していません。ぼけや映り込みで数字を読み違えることがあるため、可能なら画面録画の動画を使ってください。
 
@@ -49,7 +49,7 @@ uv run videotab verify XXXX --mark 10=57      # 繰り返し・テンポを展�
 
 ## 作業フォルダ
 
-`work/<ID>/` にまとまります。ID は、動画のファイル名の英数字と、ランダムな 6 文字（0〜9 と a〜f）からなる名前です（例 `practice-1a2b3c`。ファイル名に英数字が無ければ `video-1a2b3c`）。`work/` は Git（ソースの変更を記録する道具）の記録から外してあるので、取り込んだ動画などが videotab のソースと一緒に記録されることはありません。
+`work/<ID>/` にまとまります。ID は、動画のファイル名の英数字と、ランダムな 6 文字（0〜9 と a〜f）からなる名前です（例 `practice-1a2b3c`。ファイル名に英数字が無ければ `video-1a2b3c`）。`work/` は Git（ソースの変更を記録する道具）の記録から外してあるので、取り込んだ動画などが youtab のソースと一緒に記録されることはありません。
 
 | パス | 中身 |
 |---|---|
@@ -66,7 +66,7 @@ uv run videotab verify XXXX --mark 10=57      # 繰り返し・テンポを展�
 | `job.json` / `job.log` | 通しの実行の段ごとの状態とログ |
 | `<ID>.html` / `<ID>.alphatex` | できあがり |
 
-画面の「この曲を消す」は、`work/<ID>/` をフォルダごと消します（動画・画像・タブ譜・読み取りの結果、前回までの読み取り結果の `history/` も含みます）。元に戻せません。実行中・順番待ちの曲と、`videotab run` が動いている曲は消せません。
+画面の「この曲を消す」は、`work/<ID>/` をフォルダごと消します（動画・画像・タブ譜・読み取りの結果、前回までの読み取り結果の `history/` も含みます）。元に戻せません。実行中・順番待ちの曲と、`youtab run` が動いている曲は消せません。
 
 ## セットアップで行うこと
 
@@ -74,7 +74,7 @@ uv run videotab verify XXXX --mark 10=57      # 繰り返し・テンポを展�
 
 1. uv（Python と必要な部品をそろえる道具）があるか確かめます。無ければ公式の導入の手順を実行するか聞き、同意したときだけ入れます。
 2. ffmpeg と ffprobe があるか確かめます。ffmpeg は動画を画像に切り出すソフトで、ffprobe は取り込む動画の中身を確かめるソフトです（ffmpeg と一緒に入ります）。無ければ、Mac で Homebrew があるときは `brew install ffmpeg` を実行するか聞き、それ以外は入れ方を表示して止まります。
-3. `uv sync --locked` で、Python 3.11 と videotab が使う部品を、決まった版のとおりに入れます。
+3. `uv sync --locked` で、Python 3.11 と youtab が使う部品を、決まった版のとおりに入れます。
 4. 読み取りに使う Claude Code（`claude`）か Codex（`codex`）があるか確かめます。ログインが要るので、これは入れません。
 
 uv と ffmpeg を自分で入れてあれば、`uv sync` だけでも同じです。

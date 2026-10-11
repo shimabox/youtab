@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-import videotab
-from videotab.alphatex import (
+import youtab
+from youtab.alphatex import (
     BEAT_EFFECT_ARGS,
     LIST_NO_PAREN,
     NOTE_EFFECT_ARGS,
@@ -20,7 +20,7 @@ from videotab.alphatex import (
     parse_bar,
 )
 
-ALPHATAB = Path(videotab.__file__).parent / "templates" / "vendor" / "alphatab.min.js"
+ALPHATAB = Path(youtab.__file__).parent / "templates" / "vendor" / "alphatab.min.js"
 
 
 def length(tex: str) -> Fraction:
@@ -124,7 +124,7 @@ def test_expanded_beats_and_notes_are_limited(monkeypatch):
     with pytest.raises(ParseError, match="1 拍の音が多すぎます"):
         parse_bar("(" + " ".join(["0.6"] * 33) + ").1")
     # 小節をまたいだ合計にも上限がある。超えた所で止め、後ろは調べない
-    monkeypatch.setattr(videotab.alphatex, "MAX_TOTAL_BEATS", 10)
+    monkeypatch.setattr(youtab.alphatex, "MAX_TOTAL_BEATS", 10)
     issues, parsed = check_bars({1: "r.4 r.4 r.4 r.4", 2: "r.4 r.4 r.4 r.4", 3: "r.4 r.4 r.4 r.4", 4: "r.1"})
     assert [(i.bar, i.level) for i in issues] == [(3, "error")] and "拍の合計が多すぎます" in issues[0].message
     assert sorted(parsed) == [1, 2]

@@ -1,7 +1,7 @@
 """作業フォルダに書く・消す・移すとき、リンクがどう置かれていても作業フォルダの外を変えない部品。
 
 読み取りのエージェント（特に Codex）は、作業フォルダの中にシンボリックリンクやハードリンクを
-作れる。本体（videotab serve / run とそのコマンド）がそれをたどって書くと、利用者の権限で外の
+作れる。本体（youtab serve / run とそのコマンド）がそれをたどって書くと、利用者の権限で外の
 ファイルを変えてしまう。そこで、本体が作業フォルダに書くときは次の決まりを守る。
 
 1. 基準は resolve 済みの作業フォルダ（root）。作業フォルダ自身とその親は読み手が差し替えられない
@@ -29,11 +29,11 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path, PurePath
 
-from videotab import confine
+from youtab import confine
 
 DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
-STAGE_PREFIX = ".videotab-tmp-"  # 置き場の一時フォルダの名前の頭（ID_PATTERN に合わないので一覧に出ない）
-STAGE_LOCK = ".videotab-tmp.lock"  # 置き場の一時フォルダの作成と掃除を排他にするロック
+STAGE_PREFIX = ".youtab-tmp-"  # 置き場の一時フォルダの名前の頭（ID_PATTERN に合わないので一覧に出ない）
+STAGE_LOCK = ".youtab-tmp.lock"  # 置き場の一時フォルダの作成と掃除を排他にするロック
 STAGE_INNER_LOCK = ".lock"  # 一時フォルダを使っている間、作った処理が握るロック
 
 
@@ -449,7 +449,7 @@ def stage(place: Path):
             try:
                 _remove_stage(top, name)
             except (OSError, SystemExit) as e:
-                print(f"videotab: 一時フォルダ {name} を消せませんでした（{reason(e)}）", file=sys.stderr, flush=True)
+                print(f"youtab: 一時フォルダ {name} を消せませんでした（{reason(e)}）", file=sys.stderr, flush=True)
             finally:
                 os.close(lock)
 
@@ -520,7 +520,7 @@ def sweep_stages(place: Path) -> list[str]:
                         remove(top, name)
                         removed.append(name)
                     except (OSError, SystemExit) as e:
-                        print(f"videotab: 一時フォルダ {name} を消せませんでした（{reason(e)}）", file=sys.stderr, flush=True)
+                        print(f"youtab: 一時フォルダ {name} を消せませんでした（{reason(e)}）", file=sys.stderr, flush=True)
             finally:
                 fcntl.flock(common, fcntl.LOCK_UN)
         finally:

@@ -7,9 +7,9 @@ import pytest
 from fakes import FakeAgent, make_work
 from synth import video_noise, write_frames
 
-from videotab import agent_settings, cli, pipeline, read, strip
-from videotab.agent import AgentResult
-from videotab.agent_settings import AgentSettings
+from youtab import agent_settings, cli, pipeline, read, strip
+from youtab.agent import AgentResult
+from youtab.agent_settings import AgentSettings
 
 
 def test_steps_start_with_add():
@@ -373,7 +373,7 @@ def test_hold_blocks_others_and_run_inside_does_not_lock_again(tmp_path, monkeyp
     monkeypatch.setattr(pipeline.Job, "_run_locked", lambda self: ran.append(self) or True)
     with job.hold():
         assert pipeline.Job(wd).is_locked()
-        with pytest.raises(pipeline.Busy, match="別の videotab が実行中です"):
+        with pytest.raises(pipeline.Busy, match="別の youtab が実行中です"):
             with pipeline.Job(wd).hold():
                 pass
         with pytest.raises(pipeline.Busy):
@@ -412,17 +412,17 @@ def test_lock_that_is_not_a_regular_file_is_busy(tmp_path, kind):
     else:
         assert not os.path.lexists(target)  # 壊れたリンクの先を作らない
 
-def test_videotab_run_stops_with_same_message_when_locked(tmp_path):
+def test_youtab_run_stops_with_same_message_when_locked(tmp_path):
     wd = tmp_path / "work" / "abcdefghijk"
     job = pipeline.Job.create(wd)
     before = job.path.read_text(encoding="utf-8")
     for extra in ([], ["--step", "read"]):
         with pipeline.Job(wd).hold():
-            with pytest.raises(SystemExit, match="^abcdefghijk は別の videotab（画面など）が実行中です$"):
+            with pytest.raises(SystemExit, match="^abcdefghijk は別の youtab（画面など）が実行中です$"):
                 cli.main(["run", "abcdefghijk", "--root", str(tmp_path / "work"), *extra])
     assert job.path.read_text(encoding="utf-8") == before  # 握れないうちは job を書き換えない
 
-def test_videotab_run_step_keeps_records_of_earlier_steps(tmp_path, monkeypatch):
+def test_youtab_run_step_keeps_records_of_earlier_steps(tmp_path, monkeypatch):
     job, _ = run_read(tmp_path, monkeypatch, fake=FakeAgent({"A": "実際のモデル claude-opus-5-5・推論の強さ high（普段の設定）"}))
     data = job.load()
     for s in data["steps"][5:]:  # 組み立て直したと分かるように、前の実行の記録を古くしておく
@@ -450,7 +450,7 @@ def test_videotab_run_step_keeps_records_of_earlier_steps(tmp_path, monkeypatch)
     }
 
 
-def test_videotab_run_step_marks_unfinished_earlier_steps_as_done(tmp_path, monkeypatch):
+def test_youtab_run_step_marks_unfinished_earlier_steps_as_done(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setattr(pipeline.Job, "run", lambda self: seen.append(self.load()) or True)
     wd = tmp_path / "work" / "abcdefghijk"
@@ -471,7 +471,7 @@ def test_videotab_run_step_marks_unfinished_earlier_steps_as_done(tmp_path, monk
     assert (seen[-1]["engine"], seen[-1]["choice"], seen[-1]["status"]) == ("codex", {"model": "gpt-7", "effort": "high"}, "queued")
 
 
-def test_videotab_run_step_recreates_job_with_other_step_list(tmp_path, monkeypatch):
+def test_youtab_run_step_recreates_job_with_other_step_list(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setattr(pipeline.Job, "run", lambda self: seen.append(self.load()) or True)
     wd = tmp_path / "work" / "abcdefghijk"
@@ -583,7 +583,7 @@ def judged_work(tmp_path, monkeypatch, result, n_pages=1, reader=None, once=Fals
     """切り出し済みの動画の曲。strip.detect は result を返し、コマンドは同じプロセスで実行する。
     読み手は起動すると失敗し（reader を渡せばそれを使う）、パートの洗い出しは 1 パートを書く。
     起動された担当の名前のリストも返す。once なら、result を返すのは最初の検出だけで、あとは本物の検出。"""
-    from videotab import paper
+    from youtab import paper
 
     wd = make_work(tmp_path, n_pages=n_pages)
     detections, agents = [], []
@@ -622,7 +622,7 @@ def judged_work(tmp_path, monkeypatch, result, n_pages=1, reader=None, once=Fals
 def test_video_judged_as_paper_continues_to_part_listing_in_the_same_step(tmp_path, monkeypatch):
     from test_source_judge import PAPER_CHOICE, PAPER_LIKE, detected
 
-    from videotab.workdir import load_meta
+    from youtab.workdir import load_meta
 
     job, detections, agents = judged_work(tmp_path, monkeypatch, detected(**PAPER_LIKE))
     assert "source_mode" not in job.load()
@@ -655,7 +655,7 @@ def test_video_judged_as_paper_continues_to_part_listing_in_the_same_step(tmp_pa
 def test_video_judged_as_screen_shows_counts_in_strip_step(tmp_path, monkeypatch):
     from test_source_judge import detected
 
-    from videotab.workdir import load_meta
+    from youtab.workdir import load_meta
 
     job, detections, agents = judged_work(tmp_path, monkeypatch, detected(22))
     assert job._run_step("strip", "claude") == "画面のタブ譜として検出（タブが見えた画像 22/24 枚）"
@@ -680,7 +680,7 @@ def test_strip_step_through_the_real_command_reports_screen(tmp_path):
 
     wd = make_work(tmp_path, n_pages=2)
     job = pipeline.Job.create(wd)
-    message = job._run_step("strip", "claude")  # 合成の画面のタブ譜を、本物の videotab strip で検出する
+    message = job._run_step("strip", "claude")  # 合成の画面のタブ譜を、本物の youtab strip で検出する
     assert re.fullmatch(r"画面のタブ譜として検出（タブが見えた画像 (\d+)/\1 枚）", message), message
     meta = json.loads((wd / "meta.json").read_text(encoding="utf-8"))
     assert meta["source_choice"]["mode"] == "video" and "located_frames" not in meta["source_choice"]
@@ -690,8 +690,8 @@ def test_strip_step_through_the_real_command_reports_screen(tmp_path):
 def test_paper_chosen_by_user_is_not_judged(tmp_path, monkeypatch):
     from test_source_judge import detected
 
-    from videotab import paper
-    from videotab.workdir import load_meta
+    from youtab import paper
+    from youtab.workdir import load_meta
 
     job, detections, agents = judged_work(tmp_path, monkeypatch, detected(22))  # 画面のタブ譜に見える結果
     paper.switch_to_paper(job.workdir, paper.user_choice("paper"))
@@ -706,7 +706,7 @@ def test_paper_chosen_by_user_is_not_judged(tmp_path, monkeypatch):
 
 
 def test_no_tab_message_tells_how_to_import_paper_video_without_launching_agents(tmp_path, monkeypatch):
-    from videotab import paper
+    from youtab import paper
 
     def no_agent(*args, **kwargs):
         raise AssertionError("タブ譜が写っていない動画でエージェントを起動しない")
@@ -720,7 +720,7 @@ def test_no_tab_message_tells_how_to_import_paper_video_without_launching_agents
     assert not job.run()
     data = job.load()
     message = next(s for s in data["steps"] if s["name"] == "strip")["message"]
-    assert "取り込んだ動画と画像を消しました" in message and "videotab run 動画ファイル --paper" in message
+    assert "取り込んだ動画と画像を消しました" in message and "youtab run 動画ファイル --paper" in message
     assert data["status"] == "failed" and "source_mode" not in data
     assert not (wd / "video.mp4").exists() and not (wd / "frames").exists()
 
@@ -728,7 +728,7 @@ def test_no_tab_message_tells_how_to_import_paper_video_without_launching_agents
 def test_run_step_strip_screen_turns_judged_paper_back_into_screen_and_finishes(tmp_path, monkeypatch, capsys):
     from test_source_judge import PAPER_CHOICE, PAPER_LIKE, detected
 
-    from videotab.workdir import load_meta
+    from youtab.workdir import load_meta
 
     fake = FakeAgent()
     job, detections, agents = judged_work(tmp_path, monkeypatch, detected(**PAPER_LIKE), n_pages=10, reader=fake, once=True)

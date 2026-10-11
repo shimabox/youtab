@@ -1,4 +1,4 @@
-"""読み取りのエージェントから実行した videotab check / zoom の閉じ込め（VIDEOTAB_CONFINE）。"""
+"""読み取りのエージェントから実行した youtab check / zoom の閉じ込め（YOUTAB_CONFINE）。"""
 
 import builtins
 import io
@@ -9,7 +9,7 @@ import pathlib
 import pytest
 from synth import TAB_LINES, frame, write_frames
 
-from videotab import build, cli, confine, read
+from youtab import build, cli, confine, read
 
 SEVEN_STRINGS = "e4 b3 g3 d3 a2 e2 b1"
 AS_ROOT = hasattr(os, "geteuid") and os.geteuid() == 0
@@ -31,9 +31,9 @@ def song(tmp_path, **score):
 
 def confine_to(monkeypatch, wd, on=True):
     if on:
-        monkeypatch.setenv("VIDEOTAB_CONFINE", str(wd))
+        monkeypatch.setenv("YOUTAB_CONFINE", str(wd))
     else:
-        monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+        monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
 
 
 # --- 課題 1: 作業フォルダの決め方
@@ -130,7 +130,7 @@ class Spy:
 
         OS がパスを 1 要素ずつたどる道筋（リンクと .. を OS と同じ順に解く）の、どこかで外に
         入ったものを数える。途中で外を通って中へ戻るものも数える。作業フォルダ自身の親は、
-        途中に通るのと、VIDEOTAB_CONFINE の値を resolve するための lstat だけは数えない。
+        途中に通るのと、YOUTAB_CONFINE の値を resolve するための lstat だけは数えない。
         """
         bad = []
         ancestors = {str(p) for p in pathlib.Path(self.wd).parents}
@@ -339,7 +339,7 @@ def test_paths_given_to_readers_pass_but_aliases_are_refused(tmp_path, monkeypat
     alias = tmp_path / "alias"
     alias.symlink_to(real)
     (real / "via-alias").symlink_to(alias / "parts")
-    monkeypatch.setenv("VIDEOTAB_CONFINE", str(alias))  # 作業フォルダは resolve して使う
+    monkeypatch.setenv("YOUTAB_CONFINE", str(alias))  # 作業フォルダは resolve して使う
     wd = real.resolve()
     assert cli.main(["check", f"{wd}/parts/part_A.json"]) == 0
     assert cli.main(["check", str(wd)]) == 0

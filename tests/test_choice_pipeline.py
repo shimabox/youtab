@@ -7,8 +7,8 @@ import pytest
 from fakes import FakeAgent, make_work
 from test_pipeline import SnapshotAgent, read_message, use_claude_settings, use_codex_settings
 
-from videotab import pipeline, read
-from videotab.agent_settings import AgentSettings, Choice
+from youtab import pipeline, read
+from youtab.agent_settings import AgentSettings, Choice
 
 
 def new_job(tmp_path, engine="claude", choice=None):
@@ -70,7 +70,7 @@ def test_read_step_passes_choice_to_every_launch(tmp_path, monkeypatch):
     expected = AgentSettings("claude", model="opus", model_efforts={"claude-opus-5-5": "high"}, chosen_model="sonnet")
     assert sorted(label for label, _ in fake.settings) == ["A", "A 直し", "B", "まとめ役"]
     assert all(got == expected for _, got in fake.settings)
-    summary = "モデル sonnet（videotab で指定）・推論の強さはモデルごとの普段の設定"
+    summary = "モデル sonnet（youtab で指定）・推論の強さはモデルごとの普段の設定"
     assert sum(line.endswith(f"読み取りの設定: Claude Code・{summary}") for line in job.log_tail(1000)) == 1
     assert fake.messages[0][1] == summary
     assert job.load()["choice"] == {"model": "sonnet"}
@@ -82,7 +82,7 @@ def test_read_step_with_codex_choice(tmp_path, monkeypatch):
     assert ok
     assert all(got == AgentSettings("codex", model="gpt-6-astra", effort="high", chosen_effort="xhigh")
                for _, got in fake.settings)  # fmt: skip
-    assert read_message(job) == "モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（videotab で指定）"
+    assert read_message(job) == "モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（youtab で指定）"
 
 
 def test_read_step_notes_removed_effort_env_once(tmp_path, monkeypatch):
@@ -91,7 +91,7 @@ def test_read_step_notes_removed_effort_env_once(tmp_path, monkeypatch):
     assert ok
     log = job.log_tail(1000)
     assert sum("環境変数 CLAUDE_CODE_EFFORT_LEVEL は読み取りのエージェントに渡しません" in line for line in log) == 1
-    assert any(line.endswith("読み取りの設定: Claude Code・モデル Claude Code の標準・推論の強さ max（videotab で指定）") for line in log)
+    assert any(line.endswith("読み取りの設定: Claude Code・モデル Claude Code の標準・推論の強さ max（youtab で指定）") for line in log)
 
 
 def test_read_step_without_env_has_no_note(tmp_path, monkeypatch):

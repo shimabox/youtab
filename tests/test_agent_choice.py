@@ -6,9 +6,9 @@ from pathlib import Path
 
 import pytest
 
-from videotab import agent
-from videotab import agent_settings as s
-from videotab.agent_settings import AgentSettings, Choice
+from youtab import agent
+from youtab import agent_settings as s
+from youtab.agent_settings import AgentSettings, Choice
 
 
 def write_claude(tmp_path, monkeypatch, data):
@@ -169,21 +169,21 @@ def test_removed_env_notes_only_when_present(monkeypatch):
 
 def test_summary_and_lines_show_choice_first(monkeypatch):
     both = s.apply_choice(AgentSettings("claude", model="opus"), Choice("sonnet", "max"))
-    assert s.start_line(both) == "読み取りの設定: Claude Code・モデル sonnet（videotab で指定）・推論の強さ max（videotab で指定）"
+    assert s.start_line(both) == "読み取りの設定: Claude Code・モデル sonnet（youtab で指定）・推論の強さ max（youtab で指定）"
     model_only = s.apply_choice(USUAL_CLAUDE, Choice("sonnet", None))
-    assert s.start_line(model_only) == "読み取りの設定: Claude Code・モデル sonnet（videotab で指定）・推論の強さはモデルごとの普段の設定"
-    assert s.actual_text(both, "claude-sonnet-5") == "実際のモデル claude-sonnet-5・推論の強さ max（videotab で指定）"
+    assert s.start_line(model_only) == "読み取りの設定: Claude Code・モデル sonnet（youtab で指定）・推論の強さはモデルごとの普段の設定"
+    assert s.actual_text(both, "claude-sonnet-5") == "実際のモデル claude-sonnet-5・推論の強さ max（youtab で指定）"
     assert s.actual_text(model_only, "claude-opus-5-5") == "実際のモデル claude-opus-5-5・推論の強さ high（普段の設定）"
     codex = s.apply_choice(USUAL_CODEX, Choice(None, "xhigh"))
-    assert s.start_line(codex) == "読み取りの設定: Codex・モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（videotab で指定）"
+    assert s.start_line(codex) == "読み取りの設定: Codex・モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（youtab で指定）"
     # 環境変数より選んだ値が先
     monkeypatch.setenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
     monkeypatch.setenv("CLAUDE_CODE_EFFORT_LEVEL", "low")
     env = s.apply_choice(s.load_settings("claude"), Choice("opus", "max"))
-    assert s.summary(env) == "モデル opus（videotab で指定）・推論の強さ max（videotab で指定）"
-    assert s.actual_text(env, "claude-opus-5-5").endswith("推論の強さ max（videotab で指定）")
+    assert s.summary(env) == "モデル opus（youtab で指定）・推論の強さ max（youtab で指定）"
+    assert s.actual_text(env, "claude-opus-5-5").endswith("推論の強さ max（youtab で指定）")
     effort_only = s.apply_choice(s.load_settings("claude"), Choice(None, "high"))
-    assert s.summary(effort_only) == "モデル claude-haiku-4-5（環境変数で指定）・推論の強さ high（videotab で指定）"
+    assert s.summary(effort_only) == "モデル claude-haiku-4-5（環境変数で指定）・推論の強さ high（youtab で指定）"
 
 
 def test_usual_labels(tmp_path, monkeypatch):
@@ -298,11 +298,11 @@ def test_claude_chosen_effort_removes_env_and_keeps_model_env(tmp_path, monkeypa
     logs = launch(tmp_path, "claude", settings)
     cmd, env = fake_popen[0]
     assert "CLAUDE_CODE_EFFORT_LEVEL" not in env and env["ANTHROPIC_MODEL"] == "claude-haiku-4-5"
-    assert os.environ["CLAUDE_CODE_EFFORT_LEVEL"] == "low"  # videotab 自身の環境は変えない
+    assert os.environ["CLAUDE_CODE_EFFORT_LEVEL"] == "low"  # youtab 自身の環境は変えない
     i = cmd.index("--model")
     assert cmd[i : i + 4] == ["--model", "sonnet", "--effort", "max"] and cmd[i + 4] == "--tools"
     assert "--settings" not in cmd
-    assert "[A] 実際のモデル claude-sonnet-5・推論の強さ max（videotab で指定）" in logs
+    assert "[A] 実際のモデル claude-sonnet-5・推論の強さ max（youtab で指定）" in logs
 
 
 def test_claude_chosen_model_keeps_env(tmp_path, monkeypatch, fake_popen):

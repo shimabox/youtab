@@ -6,8 +6,8 @@ from synth import BAND, TAB_LINES, digit_frame, frame, video_noise, write_frames
 
 from PIL import Image, ImageDraw, UnidentifiedImageError
 
-from videotab import cli, pages, strip
-from videotab.workdir import list_frames
+from youtab import cli, pages, strip
+from youtab.workdir import list_frames
 
 
 def detect_setup(workdir):

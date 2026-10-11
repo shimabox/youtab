@@ -10,11 +10,11 @@ from fakes import FakeAgent, make_work
 from test_pipeline import make_notab_work
 from trees import is_plain, make_outside, place_folder, place_last, snapshot
 
-from videotab import pipeline, read, server
+from youtab import pipeline, read, server
 
 @pytest.fixture(autouse=True)
 def no_confine(monkeypatch):
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
 
 
 def no_outside_paths(text, out):

@@ -1,9 +1,9 @@
 """読み取りのエージェントに渡すモデルと推論の強さを決める。
 
-画面か videotab run で曲ごとに選んだ値（選択）があればそれを、無ければ利用者の普段の
+画面か youtab run で曲ごとに選んだ値（選択）があればそれを、無ければ利用者の普段の
 設定の値を渡す。選択は項目ごとに独立で、選ばなかった項目は普段の設定のまま動く。
 
-読み手のプロセスには利用者の設定を読ませない（agent.py）。代わりに videotab が
+読み手のプロセスには利用者の設定を読ませない（agent.py）。代わりに youtab が
 ユーザー設定のファイルを読み、モデルと推論の強さだけを取り出して起動の引数で渡す。
 ほかの値（権限・フックなど）は持ち出さない。普段の設定のファイルには書き込まない。
 
@@ -14,7 +14,7 @@
 渡さずに job.log へ注意書きを 1 行出し、読み取りは止めない。選択の値が検査に通らない
 ときは、普段の設定に落とさずに失敗にする。
 
-選択肢の一覧と選択の検査はここに置き、画面（server.py）・videotab run（cli.py）・
+選択肢の一覧と選択の検査はここに置き、画面（server.py）・youtab run（cli.py）・
 読み取りの段（pipeline.py）・起動の直前（agent.py）が同じものを使う。
 """
 
@@ -35,7 +35,7 @@ CODEX_EFFORT_RE = re.compile(r"[a-z]{1,16}")  # 受け付ける値の一覧が�
 MAX_BYTES = 1024 * 1024
 MAX_MODEL_SETTINGS = 64  # 引数の長さを抑えるための上限
 
-# 画面と videotab run で選べる値。Claude Code のモデルは CLI の別名（常にその系統の最新を指す）。
+# 画面と youtab run で選べる値。Claude Code のモデルは CLI の別名（常にその系統の最新を指す）。
 # Codex には最新を指す別名が無く、決まった選択肢はすぐ古くなるので、モデル名の選択肢は置かない
 # （どちらのエンジンも「その他」で MODEL_RE の形の名前を受ける）
 CHOICE_MODELS: dict[str, tuple[str, ...] | None] = {"claude": ("opus", "sonnet", "fable", "haiku"), "codex": None}
@@ -47,7 +47,7 @@ CLAUDE_EFFORT_ENV = "CLAUDE_CODE_EFFORT_LEVEL"
 
 FROM_FILE = "（普段の設定）"
 FROM_ENV = "（環境変数で指定）"
-FROM_CHOICE = "（videotab で指定）"
+FROM_CHOICE = "（youtab で指定）"
 
 
 def valid_model(value: object) -> bool:
@@ -66,7 +66,7 @@ def valid_codex_effort(value: object) -> bool:
     return isinstance(value, str) and CODEX_EFFORT_RE.fullmatch(value) is not None
 
 
-# --- 選択（画面と videotab run で選んだ値）
+# --- 選択（画面と youtab run で選んだ値）
 
 
 def valid_choice_model(engine: str, value: object) -> bool:
@@ -128,7 +128,7 @@ def normalize_effort(engine: str, value: object) -> str | None:
 
 
 def normalize_choice(engine: str, model: object = None, effort: object = None) -> Choice:
-    """画面・videotab run・job.json から来た値を検査して Choice にする。"""
+    """画面・youtab run・job.json から来た値を検査して Choice にする。"""
     return Choice(normalize_model(engine, model), normalize_effort(engine, effort))
 
 
@@ -199,14 +199,14 @@ def validate(settings: AgentSettings, engine: str) -> None:
         )
     if settings.model is not None and not valid_model(settings.model):
         name = ENGINE_NAMES.get(engine, engine)
-        raise ValueError(f"{name} の設定にあるモデルは使えない名前です。{name} の設定を直すか、videotab でモデルを選んでください")
+        raise ValueError(f"{name} の設定にあるモデルは使えない名前です。{name} の設定を直すか、youtab でモデルを選んでください")
     if settings.env_model is not None and not valid_model(settings.env_model):
         raise ValueError(
-            "環境変数 ANTHROPIC_MODEL のモデルは使えない名前です。環境変数を直すか、videotab でモデルを選んでください"
+            "環境変数 ANTHROPIC_MODEL のモデルは使えない名前です。環境変数を直すか、youtab でモデルを選んでください"
         )
     if settings.env_effort is not None and not valid_claude_env_effort(settings.env_effort):
         raise ValueError(
-            f"環境変数 {CLAUDE_EFFORT_ENV} の推論の強さは使えない値です。環境変数を直すか、videotab で推論の強さを選んでください"
+            f"環境変数 {CLAUDE_EFFORT_ENV} の推論の強さは使えない値です。環境変数を直すか、youtab で推論の強さを選んでください"
         )
     efforts = settings.model_efforts
     if engine == "claude":
@@ -217,12 +217,12 @@ def validate(settings: AgentSettings, engine: str) -> None:
         if not isinstance(efforts, dict) or len(efforts) > MAX_MODEL_SETTINGS:
             raise ValueError(
                 "Claude Code の設定（modelSettings）のモデルごとの推論の強さが使えない形です。"
-                "Claude Code の設定を直すか、videotab で推論の強さを選んでください"
+                "Claude Code の設定を直すか、youtab で推論の強さを選んでください"
             )
         if not all(valid_model(k) and valid_claude_effort(v) for k, v in efforts.items()):
             raise ValueError(
                 "Claude Code の設定（modelSettings）のモデルごとの推論の強さに使えない値があります。"
-                "Claude Code の設定を直すか、videotab で推論の強さを選んでください"
+                "Claude Code の設定を直すか、youtab で推論の強さを選んでください"
             )
     else:
         if efforts:
@@ -230,7 +230,7 @@ def validate(settings: AgentSettings, engine: str) -> None:
         if settings.effort is not None and not valid_codex_effort(settings.effort):
             raise ValueError(
                 "Codex の設定（model_reasoning_effort）の推論の強さが使えない値です。"
-                "Codex の設定を直すか、videotab で推論の強さを選んでください"
+                "Codex の設定を直すか、youtab で推論の強さを選んでください"
             )
 
 
@@ -406,7 +406,7 @@ def removed_env(settings: AgentSettings) -> tuple[str, ...]:
 def removed_env_notes(settings: AgentSettings) -> list[str]:
     """環境変数を外すときに job.log へ出す注意書き（今の環境にあるものだけ）。"""
     return [
-        f"推論の強さを videotab で指定したので、環境変数 {name} は読み取りのエージェントに渡しません"
+        f"推論の強さを youtab で指定したので、環境変数 {name} は読み取りのエージェントに渡しません"
         for name in removed_env(settings)
         if name in os.environ
     ]
@@ -415,7 +415,7 @@ def removed_env_notes(settings: AgentSettings) -> list[str]:
 def codex_args(settings: AgentSettings) -> list[str]:
     """codex exec に足す引数。渡すものが無ければ空。
 
-    Codex はユーザー設定を読まずに起動するので、選ばなかった項目は videotab が読んだ普段の値を渡す。
+    Codex はユーザー設定を読まずに起動するので、選ばなかった項目は youtab が読んだ普段の値を渡す。
     """
     model = settings.chosen_model if settings.chosen_model is not None else settings.model
     effort = settings.chosen_effort if settings.chosen_effort is not None else settings.effort

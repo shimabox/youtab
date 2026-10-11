@@ -1,6 +1,6 @@
 """実行中の曲を止める合図。
 
-画面の「止める」で cancel() が呼ばれると、そのとき動いている子プロセス（videotab のコマンドと
+画面の「止める」で cancel() が呼ばれると、そのとき動いている子プロセス（youtab のコマンドと
 読み取りのエージェント）に止まるよう合図を送り、以後に起動しようとした子プロセスもすぐ止める。
 合図は子プロセスの子孫（エージェントが起動したツールなど）にも送る。子孫が出力のパイプを握ったまま
 残ると、読む側がいつまでも終わらないため。合図のあとしばらく待っても終わらないものは強制的に終わらせる。
@@ -52,7 +52,7 @@ class Cancel:
     def watch(self, proc: subprocess.Popen, sig: int = signal.SIGTERM):
         """proc が動いている間、止める合図で proc に sig を送る。合図がもう出ていれば、すぐ送る。
 
-        videotab のコマンドには SIGINT を送る（Python の後始末が走り、一時フォルダや ffmpeg も片付く）。
+        youtab のコマンドには SIGINT を送る（Python の後始末が走り、一時フォルダや ffmpeg も片付く）。
         """
         with self._lock:
             self._procs[proc] = sig

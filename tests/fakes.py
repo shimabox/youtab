@@ -6,7 +6,7 @@ import re
 
 from synth import frame, write_frames
 
-from videotab.agent import AgentResult
+from youtab.agent import AgentResult
 
 
 class FakeAgent:

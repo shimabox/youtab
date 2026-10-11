@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from videotab.notes_md import MAX_CHARS, MAX_DEPTH, parse
+from youtab.notes_md import MAX_CHARS, MAX_DEPTH, parse
 
 
 def text(s):

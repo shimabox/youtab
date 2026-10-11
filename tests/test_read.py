@@ -5,8 +5,8 @@ import sys
 
 import pytest
 
-from videotab import agent, read
-from videotab.agent_settings import AgentSettings, load_settings
+from youtab import agent, read
+from youtab.agent_settings import AgentSettings, load_settings
 
 
 def test_plan_groups_overlap_boundary_pages():
@@ -37,8 +37,8 @@ def test_claude_command_limits_tools(tmp_path):
     allowed = cmd[cmd.index("--allowedTools") + 1 : cmd.index("--disallowedTools")]
     assert "Read" in allowed
     assert f"Write(/{(tmp_path / 'parts' / 'part_A.json').resolve()})" in allowed
-    # 実行できるのは videotab check / zoom だけ（外のパスは videotab 自身が VIDEOTAB_CONFINE で拒む）
-    yt = agent.videotab_bin()
+    # 実行できるのは youtab check / zoom だけ（外のパスは youtab 自身が YOUTAB_CONFINE で拒む）
+    yt = agent.youtab_bin()
     assert [a for a in allowed if a.startswith("Bash")] == [f"Bash({yt} check:*)", f"Bash({yt} zoom:*)"]
     assert not any(a in ("Bash", "Write", "Edit") for a in allowed)
     # git の読むだけのコマンドは、許可が無くても Claude Code が通す（作業フォルダを含むリポジトリの
@@ -114,8 +114,8 @@ def test_child_git_does_not_use_an_implicit_bare_repository():
     assert env["GIT_CONFIG_COUNT"] == "3" and env["GIT_CONFIG_KEY_2"] == "safe.bareRepository" and env["GIT_CONFIG_KEY_0"] == "a.b"
 
 
-def test_videotab_check_refuses_paths_outside_confined_folder(tmp_path, monkeypatch):
-    from videotab import cli
+def test_youtab_check_refuses_paths_outside_confined_folder(tmp_path, monkeypatch):
+    from youtab import cli
 
     inside = tmp_path / "wd" / "parts"
     inside.mkdir(parents=True)
@@ -123,37 +123,37 @@ def test_videotab_check_refuses_paths_outside_confined_folder(tmp_path, monkeypa
     other = tmp_path / "other" / "parts"
     other.mkdir(parents=True)
     (other / "part_A.json").write_text('{"1": "r.1"}', encoding="utf-8")
-    monkeypatch.setenv("VIDEOTAB_CONFINE", str(tmp_path / "wd"))
+    monkeypatch.setenv("YOUTAB_CONFINE", str(tmp_path / "wd"))
     assert cli.main(["check", str(inside / "part_A.json")]) == 0
     with pytest.raises(SystemExit, match="作業フォルダ"):
         cli.main(["check", str(tmp_path / "wd" / "parts" / ".." / ".." / "other" / "parts" / "part_A.json")])
 
 def confined_folders(tmp_path, monkeypatch):
-    """作業フォルダ wd と、その外の other を作り、VIDEOTAB_CONFINE を wd にする。"""
+    """作業フォルダ wd と、その外の other を作り、YOUTAB_CONFINE を wd にする。"""
     wd, other = tmp_path / "wd", tmp_path / "other"
     for d in (wd, other):
         (d / "parts").mkdir(parents=True)
         (d / "parts" / "part_A.json").write_text('{"1": "r.1"}', encoding="utf-8")
-    monkeypatch.setenv("VIDEOTAB_CONFINE", str(wd))
+    monkeypatch.setenv("YOUTAB_CONFINE", str(wd))
     return wd, other
 
-def test_videotab_zoom_refuses_folder_outside_confined_folder(tmp_path, monkeypatch):
-    from videotab import cli
+def test_youtab_zoom_refuses_folder_outside_confined_folder(tmp_path, monkeypatch):
+    from youtab import cli
 
     _, other = confined_folders(tmp_path, monkeypatch)
     with pytest.raises(SystemExit, match="の外です"):
         cli.main(["zoom", str(other), "1"])
 
-def test_videotab_check_refuses_folder_outside_confined_folder(tmp_path, monkeypatch):
-    from videotab import cli
+def test_youtab_check_refuses_folder_outside_confined_folder(tmp_path, monkeypatch):
+    from youtab import cli
 
     wd, other = confined_folders(tmp_path, monkeypatch)
     assert cli.main(["check", str(wd)]) == 0
     with pytest.raises(SystemExit, match="の外です"):
         cli.main(["check", str(other)])
 
-def test_videotab_check_refuses_link_to_outside(tmp_path, monkeypatch):
-    from videotab import cli
+def test_youtab_check_refuses_link_to_outside(tmp_path, monkeypatch):
+    from youtab import cli
 
     wd, other = confined_folders(tmp_path, monkeypatch)
     link = wd / "parts" / "part_B.json"
@@ -266,7 +266,7 @@ def test_read_again_after_a_broken_score_launches_the_readers(tmp_path, monkeypa
 
 
 def test_part_check_uses_time_signature_from_earlier_parts(tmp_path):
-    from videotab import build
+    from youtab import build
 
     wd = tmp_path / "w"
     (wd / "parts").mkdir(parents=True)
@@ -282,7 +282,7 @@ def test_part_check_uses_time_signature_from_earlier_parts(tmp_path):
 
 def base_claude_command(tmp_path):
     """モデルの設定を渡さないときの Claude Code の起動コマンド（渡すものが無いときは、これと完全に同じ）。"""
-    yt = agent.videotab_bin()
+    yt = agent.youtab_bin()
     rule = f"/{(tmp_path / 'parts' / 'part_A.json').resolve()}"
     return [
         "claude", "-p", "読む",
@@ -367,7 +367,7 @@ import json, os, sys
 with open(sys.argv[1], "w", encoding="utf-8") as f:
     json.dump(sys.argv[3:], f)
 with open(os.path.join(os.path.dirname(sys.argv[1]), "confine.txt"), "w", encoding="utf-8") as f:
-    f.write(os.environ.get("VIDEOTAB_CONFINE", ""))
+    f.write(os.environ.get("YOUTAB_CONFINE", ""))
 first = {"type": "system", "subtype": "init"}
 if sys.argv[2] == "with-model":
     first["model"] = "claude-opus-5-5"
@@ -379,7 +379,7 @@ print(json.dumps({"type": "result", "subtype": "success", "result": "おわり"}
 
 def install_fake_claude(tmp_path, monkeypatch, mode):
     """tmp_path に偽の claude を作り、PATH の先頭に置く。受け取った引数は args.json に、
-    環境変数 VIDEOTAB_CONFINE は confine.txt に書く。"""
+    環境変数 YOUTAB_CONFINE は confine.txt に書く。"""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     script = tmp_path / "fake_claude.py"
@@ -424,13 +424,13 @@ def test_run_agent_without_model_in_first_event(tmp_path, monkeypatch):
 
 
 def test_run_agent_confines_reader_to_resolved_workdir(tmp_path, monkeypatch):
-    # 読み手が実行する videotab check / zoom のパスの守りは VIDEOTAB_CONFINE だけなので、必ず渡す
+    # 読み手が実行する youtab check / zoom のパスの守りは YOUTAB_CONFINE だけなので、必ず渡す
     args = install_fake_claude(tmp_path, monkeypatch, "without-model")
     real = tmp_path / "real"
     real.mkdir()
     wd = tmp_path / "wd"
     wd.symlink_to(real)
-    monkeypatch.setenv("VIDEOTAB_CONFINE", str(tmp_path / "elsewhere"))  # 親の値は引き継がない
+    monkeypatch.setenv("YOUTAB_CONFINE", str(tmp_path / "elsewhere"))  # 親の値は引き継がない
     result = agent.run_agent("読む", engine="claude", workdir=wd, writable=[], log=print, label="A")
     assert result.ok
     assert (args.parent / "confine.txt").read_text(encoding="utf-8") == str(real.resolve())

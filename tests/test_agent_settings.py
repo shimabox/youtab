@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from videotab import agent_settings as s
+from youtab import agent_settings as s
 
 
 def write_claude(tmp_path, monkeypatch, data, raw=None):

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ title }} - videotab</title>
+<title>{{ title }} - youtab</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; }
@@ -250,7 +250,7 @@
 
 <footer class="tm-footer">
   <p class="tm-disclaimer">
-    videotab が動画に写ったタブ譜から自動で書き起こしたもので、誤りを含むことがあります。
+    youtab が動画に写ったタブ譜から自動で書き起こしたもので、誤りを含むことがあります。
     楽曲と元の動画・タブ譜の著作権は各権利者にあります。私的な練習の範囲で使い、公開・再配布・販売をしないでください。
   </p>
   Generated {{ generated_at }} &middot; rendered by
@@ -289,7 +289,7 @@
   // is remembered in this browser. alphaTab's own scrolling stays off: it
   // takes the window's bottom edge as visible and would let the cursor run
   // behind the controls.
-  var FOLLOW_KEY = "videotab.follow-playback";
+  var FOLLOW_KEY = "youtab.follow-playback";
   var FOLLOW_MARGIN = 16;
   var follow = true;
   try { follow = window.localStorage.getItem(FOLLOW_KEY) !== "off"; } catch (e) { /* storage blocked */ }
@@ -315,7 +315,7 @@
   }
   // Muting plays silently (cursor and following keep going), e.g. to follow
   // the score while listening to the recording; remembered like following.
-  var MUTE_KEY = "videotab.mute-playback";
+  var MUTE_KEY = "youtab.mute-playback";
   var muted = false;
   try { muted = window.localStorage.getItem(MUTE_KEY) === "on"; } catch (e) { /* storage blocked */ }
   showToggle(muteEl, muted);

@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from videotab import build, verify
-from videotab.render import render_html, tuning_label
-from videotab.workdir import frame_name, parse_frame_name
+from youtab import build, verify
+from youtab.render import render_html, tuning_label
+from youtab.workdir import frame_name, parse_frame_name
 
 
 def write(path, data):
@@ -102,7 +102,7 @@ def test_bar_number_is_limited(tmp_path, capsys):
 
 
 def test_huge_json_is_not_loaded(tmp_path, monkeypatch):
-    from videotab import workdir
+    from youtab import workdir
 
     wd = setup_work(tmp_path)
     write(wd / "parts" / "part_A.json", {"1": "r.1"})
@@ -138,11 +138,11 @@ def test_page_html_falls_back_when_the_document_has_no_usable_head():
     assert build.document_head("r.1 |\nr.1\n") == ({}, "r.1 |\nr.1\n")
     assert build.count_bars("") == 0 and build.count_bars("\n") == 0
     html = build.page_html("r.1 |\nr.1\n", {}, name="song")
-    assert "<title>song - videotab</title>" in html and "Tempo: 0 BPM" in html
+    assert "<title>song - youtab</title>" in html and "Tempo: 0 BPM" in html
     assert "Tuning: E A D G B E" in html and "Capo: 0" in html and "小節数: 2" in html
     # 数として読めない値は 0 にする
     html = build.page_html('\\title ""\n\\tempo fast\n\\capo 1e999\n\\ts 4 4\nr.1\n', {"title": ["x"]}, name="song")
-    assert "<title>song - videotab</title>" in html and "Tempo: 0 BPM" in html and "Capo: 0" in html
+    assert "<title>song - youtab</title>" in html and "Tempo: 0 BPM" in html and "Capo: 0" in html
     assert "Capo: 2" in build.page_html("\\capo 2.0\n\\ts 4 4\nr.1\n", {}, name="song")  # score.json の capo が 2.0 のとき
 
 
@@ -298,7 +298,7 @@ def test_verify_fails_on_check_errors(tmp_path, capsys):
 
 
 def test_find_video_takes_only_video_extensions(tmp_path):
-    from videotab.add import find_video
+    from youtab.add import find_video
 
     (tmp_path / "video.webm.part").write_bytes(b"")
     (tmp_path / "video.flv").write_bytes(b"")
@@ -343,7 +343,7 @@ def test_frame_name_round_trip():
 
 
 def test_rendered_page_offers_downloads():
-    from videotab.render import file_stem
+    from youtab.render import file_stem
 
     html = render_html("r.1", title='曲 "A/B"', tempo=100, tuning="e4 b3 g3 d3 a2 e2")
     for kind in ("gp", "midi", "alphatex", "print"):
@@ -370,7 +370,7 @@ def test_rendered_page_offers_mute():
     assert 'title="音を出さずに再生する（M）"' in mute and 'aria-keyshortcuts="M"' in mute
     assert "M: ミュート" in controls
     assert "api.masterVolume = muted ? 0 : 1" in html
-    assert '"videotab.mute-playback"' in html
+    assert '"youtab.mute-playback"' in html
 
 
 def test_rendered_page_draws_playback_buttons_as_icons():
@@ -400,7 +400,7 @@ def test_rendered_page_toggles_follow_with_a_button():
     keys = controls.split('<span class="tm-keys">')[1].split("</span>")[0]
     assert keys == "Space: 再生 / 一時停止　Esc: 停止　S: 自動スクロール　M: ミュート"
     assert 'type="checkbox"' not in controls
-    assert '"videotab.follow-playback"' in html
+    assert '"youtab.follow-playback"' in html
 
 
 def test_key_hints_follow_button_order():

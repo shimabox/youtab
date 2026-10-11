@@ -8,13 +8,13 @@ import threading
 import pytest
 from trees import FOLDER_SHAPES, LAST_SHAPES, is_plain, make_outside, place_folder, place_last, snapshot
 
-from videotab import confine, inside
+from youtab import confine, inside
 
 
 @pytest.fixture
 def ws(tmp_path, monkeypatch):
     """作業フォルダ wd（resolve 済み）と外の木 out。閉じ込めは無し（本体の実行と同じ）。"""
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = (tmp_path / "work" / "song").resolve()
     wd.mkdir(parents=True)
     out = make_outside(tmp_path)
@@ -346,7 +346,7 @@ def stages(place):
 def test_stage_is_private_and_removed_on_success_and_failure(tmp_path):
     place = tmp_path.resolve()
     with inside.stage(place) as st:
-        assert st.path.parent == place and st.path.name.startswith(".videotab-tmp-")
+        assert st.path.parent == place and st.path.name.startswith(".youtab-tmp-")
         assert stat.S_IMODE(os.stat(st.path).st_mode) == 0o700
         (st.path / "raw_00001.png").write_bytes(b"x")
     assert stages(place) == []
@@ -359,19 +359,19 @@ def test_stage_is_private_and_removed_on_success_and_failure(tmp_path):
 
 def test_sweep_removes_unused_stages_and_keeps_used_one(tmp_path):
     place = tmp_path.resolve()
-    (place / ".videotab-tmp-nolock").mkdir()  # 作りかけで終わった
-    (place / ".videotab-tmp-free").mkdir()
-    (place / ".videotab-tmp-free" / ".lock").write_bytes(b"")  # 使っている処理が無い
-    (place / ".videotab-tmp-oddlock").mkdir()
-    (place / ".videotab-tmp-oddlock" / ".lock").symlink_to(place / "elsewhere")
+    (place / ".youtab-tmp-nolock").mkdir()  # 作りかけで終わった
+    (place / ".youtab-tmp-free").mkdir()
+    (place / ".youtab-tmp-free" / ".lock").write_bytes(b"")  # 使っている処理が無い
+    (place / ".youtab-tmp-oddlock").mkdir()
+    (place / ".youtab-tmp-oddlock" / ".lock").symlink_to(place / "elsewhere")
     (place / "elsewhere").mkdir()
-    (place / ".videotab-tmp-link").symlink_to(place / "elsewhere")  # リンクはたどらず残す
+    (place / ".youtab-tmp-link").symlink_to(place / "elsewhere")  # リンクはたどらず残す
     (place / "abcdefghijk").mkdir()
     with inside.stage(place) as st:
         removed = inside.sweep_stages(place)
         assert st.path.is_dir()  # 使っている一時フォルダは残す
-        assert sorted(removed) == [".videotab-tmp-free", ".videotab-tmp-nolock", ".videotab-tmp-oddlock"]
-    assert stages(place) == [".videotab-tmp-link"]
+        assert sorted(removed) == [".youtab-tmp-free", ".youtab-tmp-nolock", ".youtab-tmp-oddlock"]
+    assert stages(place) == [".youtab-tmp-link"]
     assert (place / "elsewhere").is_dir() and (place / "abcdefghijk").is_dir()
 
 

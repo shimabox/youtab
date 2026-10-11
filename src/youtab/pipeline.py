@@ -1,14 +1,14 @@
 """取り込んだ動画からタブ譜までを通しで実行する。段ごとの状態は作業フォルダの job.json に残す。
 
-画面（videotab serve）と videotab run の両方がここを使う。動画の取り込みは受け付けたとき
+画面（youtab serve）と youtab run の両方がここを使う。動画の取り込みは受け付けたとき
 （add.add / add.receive）に済ませ、最初の段（add）は取り込んだ動画があるかを確かめるだけ。
-途中で失敗しても、その段からやり直せる。切り出し・検出・組み立て・照合は videotab のコマンドを
+途中で失敗しても、その段からやり直せる。切り出し・検出・組み立て・照合は youtab のコマンドを
 子プロセスで実行し、出力を job.log に残す。読み取りは read.py がエージェントを起動して行う。
 
 紙の楽譜でパートが決まっていない曲は、strip の段が楽譜のパートを洗い出したところで止まる
 （状態は waiting、段は未実行のまま）。利用者がパートを選ぶと、同じ段がページとパートの選択から続ける。
 
-楽譜の種類を指定しないで取り込んだ動画は、strip の段（videotab strip）が画面のタブ譜か紙を撮った
+楽譜の種類を指定しないで取り込んだ動画は、strip の段（youtab strip）が画面のタブ譜か紙を撮った
 動画かを見分ける。紙と見分けたら、同じ段のまま紙の楽譜の流れ（パートの洗い出し）へ続く。
 """
 
@@ -27,12 +27,12 @@ from datetime import datetime
 from fnmatch import fnmatchcase
 from pathlib import Path
 
-from videotab import agent_settings, inside
-from videotab.add import find_video
-from videotab.agent import DEFAULT_ENGINE, ENGINES, videotab_bin
-from videotab.cancel import Cancel, Cancelled
-from videotab.strip import NO_TAB_EXIT, PAPER_EXIT, paper_counts, screen_note
-from videotab.workdir import load_meta, read_json, save_meta, write_json
+from youtab import agent_settings, inside
+from youtab.add import find_video
+from youtab.agent import DEFAULT_ENGINE, ENGINES, youtab_bin
+from youtab.cancel import Cancel, Cancelled
+from youtab.strip import NO_TAB_EXIT, PAPER_EXIT, paper_counts, screen_note
+from youtab.workdir import load_meta, read_json, save_meta, write_json
 
 STEPS = [
     ("add", "動画の取り込み"),
@@ -47,7 +47,7 @@ STEP_NAMES = [name for name, _ in STEPS]
 STEP_LABELS = dict(STEPS)
 PAPER_LABELS = {"add": "楽譜の取り込み", "strip": "ページとパートの選択", "pages": "段の補正と拡大", "verify": "検査結果の確認"}
 REBUILD_FROM = "build"  # 曲の情報を書き換えたとき、組み立て直す最初の段（ここから後はエージェントを使わない）
-# videotab run が、紙の楽譜のパートの選択待ちで止まったときの終了コード（失敗の 1、strip.NO_TAB_EXIT の 3 と分ける）
+# youtab run が、紙の楽譜のパートの選択待ちで止まったときの終了コード（失敗の 1、strip.NO_TAB_EXIT の 3 と分ける）
 PART_WAIT_EXIT = 4
 # strip の段が紙を撮った動画と見分けた曲で、ログと結果欄に添える戻し方
 TO_SCREEN = "画面のタブ譜の動画なら、画面の「やり直す」で「楽譜の種類」を「画面のタブ譜」にしてやり直してください"
@@ -250,7 +250,7 @@ class Job:
     def mark_part_chosen(self, message: str) -> None:
         """パートの選択待ちの曲で、実行の外からパートが決まったとき、止めたとして記録する。
 
-        段は未実行のままで、message を待っていた段の結果欄に出す（画面の「やり直す」か videotab run で
+        段は未実行のままで、message を待っていた段の結果欄に出す（画面の「やり直す」か youtab run で
         続ける）。選択待ちでなければ何もしない。job.json を読めなければそのままにする（次の実行が作り直す）。
         """
         with self._state_lock:
@@ -299,8 +299,8 @@ class Job:
     # --- 実行
 
     def _cli(self, *args: str) -> None:
-        """videotab のコマンドを子プロセスで実行する。失敗したら最後の出力を添えて例外にする。"""
-        cmd = [videotab_bin(), *args]
+        """youtab のコマンドを子プロセスで実行する。失敗したら最後の出力を添えて例外にする。"""
+        cmd = [youtab_bin(), *args]
         proc = subprocess.Popen(
             cmd, cwd=self.workdir.parent.parent, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
         )
@@ -318,7 +318,7 @@ class Job:
             raise StepError(" / ".join(last) or f"{args[0]} が失敗しました", code)
 
     def is_locked(self) -> bool:
-        """別のプロセス（画面か videotab run）がこの作業フォルダを実行中か。
+        """別のプロセス（画面か youtab run）がこの作業フォルダを実行中か。
 
         job.lock がリンクか通常のファイルでなければ、開かずにロック中とみなす。
         """
@@ -346,7 +346,7 @@ class Job:
 
     @contextmanager
     def hold(self):
-        """job.lock を握る（実行・videotab run の準備・削除が使う）。握れなければ Busy。
+        """job.lock を握る（実行・youtab run の準備・削除が使う）。握れなければ Busy。
 
         1. 作業フォルダを作る（無ければ）
         2. job.lock をリンクをたどらずに開く。開けない・通常のファイルでなければ Busy
@@ -358,7 +358,7 @@ class Job:
         4 があるので、削除がフォルダの名前を変える前に job.lock を開いた処理は、あとでロックを
         取れても、消えるフォルダで実行しない。握っている間は run() がロックを取り直さずに実行する。
         """
-        busy = f"{self.workdir.name} は別の videotab が実行中です"
+        busy = f"{self.workdir.name} は別の youtab が実行中です"
         self.workdir.mkdir(parents=True, exist_ok=True)
         try:
             fd = os.open(self.lock_path, _LOCK_OPEN | os.O_CREAT, 0o644)
@@ -397,8 +397,8 @@ class Job:
         """未実行の段を順に進める。全部終われば True。
 
         同じ作業フォルダを 2 か所から同時に実行しないよう、実行中は job.lock を握る
-        （画面と videotab run の両方から守る）。hold() の中から呼ばれたら、握り直さずに実行する
-        （videotab run は準備から実行の終わりまで握っている）。
+        （画面と youtab run の両方から守る）。hold() の中から呼ばれたら、握り直さずに実行する
+        （youtab run は準備から実行の終わりまで握っている）。
         """
         if self._held is not None:
             return self._run_locked()
@@ -517,7 +517,7 @@ class Job:
                         raise StepError(
                             "タブ譜が写っていないと判断し、取り込んだ動画と画像を消しました。"
                             "紙の楽譜を撮った動画なら、楽譜の写真か PDF を画面から取り込むか、"
-                            "ターミナルで videotab run 動画ファイル --paper を実行して取り込み直してください"
+                            "ターミナルで youtab run 動画ファイル --paper を実行して取り込み直してください"
                         ) from None
                     # ffmpeg がない等、タブ譜の有無と関係のない失敗では消さない
                     if e.returncode != PAPER_EXIT or not load_meta(self.workdir).get("paper"):
@@ -527,7 +527,7 @@ class Job:
                     self.log("紙を撮った動画と判断しました" + (f"（{counts}）" if counts else "") + f"。{TO_SCREEN}")
                 else:
                     return self._screen_note()
-            from videotab import paper
+            from youtab import paper
 
             self._change(lambda d: d.update(source_mode="paper"))
             settings = self._settings(engine)
@@ -550,7 +550,7 @@ class Job:
             n = len(read_json(self.workdir / "pages" / "pages.json")["pages"])
             return f"{n} ページ"
         if name == "read":
-            from videotab.read import read_all
+            from youtab.read import read_all
 
             # 曲ごとの選択は job.json から読み、検査し直す。使えなければエージェントを起動しない
             settings = self._settings(engine)

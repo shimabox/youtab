@@ -1,15 +1,15 @@
-"""videotab のコマンドライン。
+"""youtab のコマンドライン。
 
-  videotab serve                     動画ファイルを送るとタブ譜まで作る画面を開く
-  videotab run FILE|ID               取り込みからタブ譜の出力までを通しで実行（画面なし）
-  videotab add FILE                  動画ファイルを新しい作業フォルダ work/<ID>/ に取り込む
-  videotab frames ID [--from DIR]    1 秒 1 枚の画像にする（既存の画像フォルダや ZIP も取り込める）
-  videotab strip ID                  タブの帯と弦の線の位置を検出
-  videotab pages ID                  ページに分けて拡大画像を作る
-  videotab zoom ID FRAME             1 フレームを拡大する
-  videotab check ID|FILE             読み取り結果（小節ごとの alphaTex）を検査
-  videotab build ID                  読み取り結果をつないで alphaTex と HTML を出力
-  videotab verify ID                 繰り返し・テンポを展開した時刻を動画と比べる
+  youtab serve                     動画ファイルを送るとタブ譜まで作る画面を開く
+  youtab run FILE|ID               取り込みからタブ譜の出力までを通しで実行（画面なし）
+  youtab add FILE                  動画ファイルを新しい作業フォルダ work/<ID>/ に取り込む
+  youtab frames ID [--from DIR]    1 秒 1 枚の画像にする（既存の画像フォルダや ZIP も取り込める）
+  youtab strip ID                  タブの帯と弦の線の位置を検出
+  youtab pages ID                  ページに分けて拡大画像を作る
+  youtab zoom ID FRAME             1 フレームを拡大する
+  youtab check ID|FILE             読み取り結果（小節ごとの alphaTex）を検査
+  youtab build ID                  読み取り結果をつないで alphaTex と HTML を出力
+  youtab verify ID                 繰り返し・テンポを展開した時刻を動画と比べる
 """
 
 from __future__ import annotations
@@ -19,12 +19,12 @@ import shlex
 import sys
 from pathlib import Path
 
-from videotab import __version__
-from videotab.workdir import WORK_ROOT, load_meta, resolve_target, save_meta
+from youtab import __version__
+from youtab.workdir import WORK_ROOT, load_meta, resolve_target, save_meta
 
 
 def cmd_serve(args) -> int:
-    from videotab.server import serve
+    from youtab.server import serve
 
     serve(Path(args.root).resolve(), port=args.port, open_browser=not args.no_open)
     return 0
@@ -34,13 +34,13 @@ USUAL = "usual"  # --model / --effort で「普段の設定に戻す」ときの
 
 
 def _run_choice(args, data: dict):
-    """videotab run で使うエンジンと選択を決める。検査に通らなければ SystemExit。
+    """youtab run で使うエンジンと選択を決める。検査に通らなければ SystemExit。
 
     既存の曲では、--engine を付けないか保存済みと同じなら、保存された選択を引き継ぎ、
     付けた項目だけを上書きする。違うエンジンを付けたら、保存された選択は引き継がない。
     """
-    from videotab import agent_settings
-    from videotab.agent import DEFAULT_ENGINE
+    from youtab import agent_settings
+    from youtab.agent import DEFAULT_ENGINE
 
     saved_engine = (data.get("engine") or DEFAULT_ENGINE) if data else None
     engine = args.engine or saved_engine or DEFAULT_ENGINE
@@ -60,7 +60,7 @@ def _run_choice(args, data: dict):
 
 def _add_video(src: Path, args) -> Path:
     """動画ファイル src を、args.root の下の新しい作業フォルダに取り込む。"""
-    from videotab import add
+    from youtab import add
 
     try:
         return add.add(src, Path(args.root), title=args.title, creator=args.creator, source_url=args.source_url)
@@ -83,7 +83,7 @@ def _paper_options(args, saved: dict, workdir: Path) -> tuple[dict, str | None]:
       パートの見込み → 6
     --part の名前は、一覧に無くても受け付ける。一覧に無い・見込みと違う弦数で進めるときは注意を返す。
     """
-    from videotab import paper
+    from youtab import paper
 
     part = args.part or saved.get("part")
     strings = args.strings or saved.get("strings")
@@ -110,7 +110,7 @@ def _paper_options(args, saved: dict, workdir: Path) -> tuple[dict, str | None]:
 
 def _save_paper(workdir: Path, opts: dict) -> None:
     """紙の楽譜の設定を保存する。紙の楽譜でなかった曲は、利用者が紙と決めた曲として記録する。"""
-    from videotab import paper
+    from youtab import paper
 
     if not load_meta(workdir).get("paper"):
         paper.switch_to_paper(workdir, paper.user_choice("paper"))
@@ -121,7 +121,7 @@ def _save_paper(workdir: Path, opts: dict) -> None:
 
 
 def _add_input(src: Path, args) -> Path:
-    from videotab import documents, paper
+    from youtab import documents, paper
 
     try:
         # パートを省くと、パートを選ぶ前の曲になる（strip の段が楽譜のパートを洗い出して止まる）
@@ -143,7 +143,7 @@ def _add_input(src: Path, args) -> Path:
 
 def _resume_command(job_id: str, root: Path) -> str:
     """途中で止まった曲を同じ作業フォルダで続けるコマンド。既定の置き場（work/）なら --root を付けない。"""
-    words = ["videotab", "run", job_id]
+    words = ["youtab", "run", job_id]
     if root != WORK_ROOT.resolve():
         words += ["--root", str(root)]
     return shlex.join(words)
@@ -151,7 +151,7 @@ def _resume_command(job_id: str, root: Path) -> str:
 
 def _print_part_choices(workdir: Path, *, listing: bool) -> None:
     """パートの選択待ちの曲の続け方を出す。listing なら、洗い出したパートの一覧も出す。"""
-    from videotab import paper
+    from youtab import paper
 
     parts = paper.load_parts(workdir)
     resume = _resume_command(workdir.name, workdir.resolve().parent)
@@ -171,9 +171,9 @@ def _print_part_choices(workdir: Path, *, listing: bool) -> None:
 def cmd_run(args) -> int:
     from contextlib import ExitStack
 
-    from videotab import paper
-    from videotab.pipeline import PART_WAIT_EXIT, STEP_NAMES, Busy, Job, has_steps
-    from videotab.workdir import ID_PATTERN
+    from youtab import paper
+    from youtab.pipeline import PART_WAIT_EXIT, STEP_NAMES, Busy, Job, has_steps
+    from youtab.workdir import ID_PATTERN
 
     if args.screen and args.paper:
         raise SystemExit("--paper と --screen は同時に指定できません")
@@ -209,7 +209,7 @@ def cmd_run(args) -> int:
         try:
             stack.enter_context(job.hold())
         except Busy:
-            raise SystemExit(f"{workdir.name} は別の videotab（画面など）が実行中です") from None
+            raise SystemExit(f"{workdir.name} は別の youtab（画面など）が実行中です") from None
         if not known:
             Job.create(workdir, engine, choice=choice)
         else:
@@ -306,12 +306,12 @@ def cmd_add(args) -> int:
     if meta.get("source_kind") == "document":
         print(f"次: {_resume_command(workdir.name, workdir.resolve().parent)} --step strip")
     else:
-        print(f"次: videotab frames {shlex.quote(str(workdir))}")
+        print(f"次: youtab frames {shlex.quote(str(workdir))}")
     return 0
 
 
 def cmd_frames(args) -> int:
-    from videotab import frames
+    from youtab import frames
 
     workdir = resolve_target(args.target)
     if args.source:
@@ -319,17 +319,17 @@ def cmd_frames(args) -> int:
     else:
         n = frames.extract(workdir, fps=args.fps, force=args.force)
     print(f"{workdir / 'frames'}: {n} 枚")
-    print(f"次: videotab strip {workdir}")
+    print(f"次: youtab strip {workdir}")
     return 0
 
 
 def _reader_target(target: str) -> Path | None:
-    """読み取りのエージェントから実行されたとき（VIDEOTAB_CONFINE あり）の対象のパス。無ければ None。
+    """読み取りのエージェントから実行されたとき（YOUTAB_CONFINE あり）の対象のパス。無ければ None。
 
     引数はパスとしてだけ扱い（ID の読み替えはしない）、ファイルシステムに触れる前に作業フォルダの
     中かを確かめる。以降は、確かめたあとのパス（作業フォルダの中の実体）だけを使う。
     """
-    from videotab import confine
+    from youtab import confine
 
     if confine.base() is None:
         return None
@@ -337,11 +337,11 @@ def _reader_target(target: str) -> Path | None:
 
 
 def _frames_or_exit(workdir: Path):
-    from videotab.workdir import list_frames
+    from youtab.workdir import list_frames
 
     frames = list_frames(workdir)
     if not frames:
-        raise SystemExit(f"{workdir / 'frames'} に画像がありません（先に videotab frames）")
+        raise SystemExit(f"{workdir / 'frames'} に画像がありません（先に youtab frames）")
     return frames
 
 
@@ -352,7 +352,7 @@ def _check_frames(frames, result):
     位置の区間・フレームのいちばん多い区間から、線の位置が見つかったフレームの真ん中を 1 枚ずつ選ぶ
     （前奏などタブのない画面も前後の区間に入っているので、それを避ける）。
     """
-    from videotab import strip
+    from youtab import strip
 
     if result.corrections:
         found = [f for f in frames if f.index in result.located]
@@ -374,19 +374,19 @@ def _check_frames(frames, result):
 
 
 def cmd_strip(args) -> int:
-    from videotab import confine, inside, strip
-    from videotab.workdir import fmt_time
+    from youtab import confine, inside, strip
+    from youtab.workdir import fmt_time
 
     workdir = resolve_target(args.target)
     frames = _frames_or_exit(workdir)
     if load_meta(workdir).get("paper"):
-        from videotab.paper import validate_layout
-        from videotab.workdir import read_json
+        from youtab.paper import validate_layout
+        from youtab.workdir import read_json
 
         if not (workdir / "paper" / "layout.json").exists():
-            raise SystemExit("紙の楽譜のページとパートを先に選んでください（videotab run ID --step strip）")
+            raise SystemExit("紙の楽譜のページとパートを先に選んでください（youtab run ID --step strip）")
         validate_layout(read_json(workdir / "paper" / "layout.json"), frames)
-        print("紙の楽譜の領域を確認しました。次: videotab pages " + str(workdir))
+        print("紙の楽譜の領域を確認しました。次: youtab pages " + str(workdir))
         return 0
     try:
         result = strip.detect(frames, band=tuple(args.band) if args.band else None)
@@ -399,7 +399,7 @@ def cmd_strip(args) -> int:
     decided = meta.get("source_choice")
     judge = not args.band and not (isinstance(decided, dict) and decided.get("by") == "user")
     if judge and strip.looks_like_paper(result):
-        from videotab import paper
+        from youtab import paper
 
         choice = strip.judged_source(result, "paper")
         paper.switch_to_paper(workdir, choice)
@@ -453,16 +453,16 @@ def cmd_strip(args) -> int:
     if judge:
         print(strip.source_note(result))
     print(f"確認用の画像: {out}/check_*.png（" + ", ".join(fmt_time(f.time) for f in picks) + "）")
-    print(f"次: videotab pages {workdir}")
+    print(f"次: youtab pages {workdir}")
     return 0
 
 
 def cmd_pages(args) -> int:
-    from videotab import pages
+    from youtab import pages
 
     workdir = resolve_target(args.target)
     if load_meta(workdir).get("paper"):
-        from videotab import paper
+        from youtab import paper
 
         paper.write_pages(workdir)
         print(f"紙の楽譜の拡大画像 → {workdir / 'pages' / 'index.md'}")
@@ -481,8 +481,8 @@ def cmd_pages(args) -> int:
 
 
 def cmd_zoom(args) -> int:
-    from videotab import confine, pages
-    from videotab.workdir import list_frames
+    from youtab import confine, pages
+    from youtab.workdir import list_frames
 
     with confine.short_errors():
         workdir = _reader_target(args.target) or resolve_target(args.target)
@@ -491,7 +491,7 @@ def cmd_zoom(args) -> int:
         if frame is None:
             raise SystemExit(f"フレーム {args.frame} がありません")
         if load_meta(workdir).get("paper"):
-            from videotab import paper
+            from youtab import paper
 
             images = paper.write_pages(workdir, zoom=frame)
         else:
@@ -503,7 +503,7 @@ def cmd_zoom(args) -> int:
 
 
 def cmd_check(args) -> int:
-    from videotab import build, confine
+    from youtab import build, confine
 
     with confine.short_errors():
         target = _reader_target(args.target)
@@ -513,14 +513,14 @@ def cmd_check(args) -> int:
 
 
 def cmd_build(args) -> int:
-    from videotab import build
+    from youtab import build
 
     workdir = resolve_target(args.target)
     return build.run_build(workdir, allow_check_errors=args.allow_check_errors)
 
 
 def cmd_verify(args) -> int:
-    from videotab import verify
+    from youtab import verify
 
     workdir = resolve_target(args.target)
     if load_meta(workdir).get("paper"):
@@ -530,8 +530,8 @@ def cmd_verify(args) -> int:
 
 
 def cmd_paper(args) -> int:
-    from videotab import paper
-    from videotab.pipeline import Busy, Job
+    from youtab import paper
+    from youtab.pipeline import Busy, Job
 
     workdir = resolve_target(args.target)
     resume = _resume_command(workdir.name, workdir.resolve().parent)
@@ -560,10 +560,10 @@ def cmd_paper(args) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from videotab.add import VIDEO_EXTS
+    from youtab.add import VIDEO_EXTS
 
     p = argparse.ArgumentParser(
-        prog="videotab", description="手元の動画ファイルから、画面に写るタブ譜を alphaTab の HTML＋alphaTex に書き起こす"
+        prog="youtab", description="手元の動画ファイルから、画面に写るタブ譜を alphaTab の HTML＋alphaTex に書き起こす"
     )
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)

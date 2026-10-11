@@ -4,7 +4,7 @@ API キーは使わず、手元の claude / codex コマンド（利用者のロ
 
 Claude Code は --restricted と --permission-mode dontAsk で起動する。利用者の設定
 （auto モードなど）を読まず、ファイル操作は作業フォルダの中だけ、書けるのは指定した
-ファイルだけになる。実行を許すのは videotab check / zoom だけで、ほかは聞かずに拒否される。
+ファイルだけになる。実行を許すのは youtab check / zoom だけで、ほかは聞かずに拒否される。
 ただし Claude Code は、作業フォルダの中を読むだけのコマンド（ls・cat など）を自分の判断で通す。
 git の読むだけのコマンドも通り、作業フォルダを含むリポジトリのコミット済みの内容まで読めるので、
 git は明示して禁じる。確かめたのは Claude Code 2.1.289。
@@ -12,7 +12,7 @@ git は明示して禁じる。確かめたのは Claude Code 2.1.289。
 
 Codex は利用者の設定（~/.codex/config.toml）を読まずに workspace-write の sandbox で起動し、
 書き込み先の追加とネットワークを明示的に切る。workspace-write が既定で書き込み先に含める
-/tmp と $TMPDIR も外す（$TMPDIR には videotab 本体やほかのプログラムの一時ファイルがある）。
+/tmp と $TMPDIR も外す（$TMPDIR には youtab 本体やほかのプログラムの一時ファイルがある）。
 書けるのは作業フォルダの中だけだが、読むことと、sandbox の中でのコマンドの実行は制限しきれない。
 一時フォルダを外した効果を確かめたのは macOS・codex-cli 0.158.0 で、Linux では確かめていない。
 sandbox のネットワークの制限が効くのはシェルのコマンドだけなので、読み取りに要らない機能
@@ -23,12 +23,12 @@ sandbox のネットワークの制限が効くのはシェルのコマンドだ
 （読み手が作業フォルダに置いた AGENTS.md が、次の起動の指示にならないように）。
 どちらのエージェントの子プロセスの git にも、暗黙の裸リポジトリを使わせない（GIT_ENV）。
 
-どちらも環境変数 VIDEOTAB_CONFINE に作業フォルダを入れて起動する。読み手が実行する
-videotab check / zoom は、これより外のパスを受け付けない（Claude Code の許可はサブコマンド
+どちらも環境変数 YOUTAB_CONFINE に作業フォルダを入れて起動する。読み手が実行する
+youtab check / zoom は、これより外のパスを受け付けない（Claude Code の許可はサブコマンド
 までなので、パスの守りはこれが担う）。
 
-モデルと推論の強さは、画面か videotab run で曲ごとに選んだ値か、選ばなかった項目は利用者の
-普段の設定の値を渡す（agent_settings.py）。設定ファイルはエージェントには読ませず、videotab が
+モデルと推論の強さは、画面か youtab run で曲ごとに選んだ値か、選ばなかった項目は利用者の
+普段の設定の値を渡す（agent_settings.py）。設定ファイルはエージェントには読ませず、youtab が
 モデルと推論の強さだけを読んで起動の引数で渡す。Claude Code には、普段の設定を model と
 modelSettings だけの JSON で --settings に、選んだ値を --model / --effort で渡す（推論の強さを
 選んだときは、子プロセスの環境変数から CLAUDE_CODE_EFFORT_LEVEL を外す）。Codex には -m と
@@ -51,15 +51,15 @@ from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 
-from videotab.agent_settings import ENGINE_NAMES, AgentSettings, actual_text, claude_args, codex_args, removed_env, valid_model, validate
-from videotab.cancel import Cancel, Cancelled, stop
+from youtab.agent_settings import ENGINE_NAMES, AgentSettings, actual_text, claude_args, codex_args, removed_env, valid_model, validate
+from youtab.cancel import Cancel, Cancelled, stop
 
 ENGINES = ("claude", "codex")
 DEFAULT_ENGINE = "claude"
-CONFINE_ENV = "VIDEOTAB_CONFINE"
+CONFINE_ENV = "YOUTAB_CONFINE"
 TIMEOUT = 60 * 60  # 1 回の起動の上限（秒）
 # Codex の読み手で切る機能（-c features.<名前>=false。その版の Codex に無い名前は無視される）。
-# 読み取りに要るのは、シェル（videotab check / zoom）と画像を見ることだけ
+# 読み取りに要るのは、シェル（youtab check / zoom）と画像を見ることだけ
 CODEX_FEATURES_OFF = (
     "apps",  # ChatGPT のコネクタ。sandbox のネットワークの制限が効かない
     "plugins",
@@ -83,10 +83,10 @@ def available_engines() -> dict[str, bool]:
     return {name: shutil.which(name) is not None for name in ENGINES}
 
 
-def videotab_bin() -> str:
-    """エージェントに実行させる videotab コマンドの絶対パス（作業フォルダがどこでも動くように）。"""
-    here = Path(sys.executable).parent / "videotab"
-    return str(here) if here.exists() else (shutil.which("videotab") or "videotab")
+def youtab_bin() -> str:
+    """エージェントに実行させる youtab コマンドの絶対パス（作業フォルダがどこでも動くように）。"""
+    here = Path(sys.executable).parent / "youtab"
+    return str(here) if here.exists() else (shutil.which("youtab") or "youtab")
 
 
 @dataclass
@@ -99,13 +99,13 @@ class AgentResult:
 def _claude_command(
     prompt: str, writable: list[Path], workdir: Path, *, settings: AgentSettings | None = None
 ) -> list[str]:
-    yt = videotab_bin()
-    # Read・Glob・Grep は --restricted で作業フォルダの中に限られる。videotab は check と zoom の
+    yt = youtab_bin()
+    # Read・Glob・Grep は --restricted で作業フォルダの中に限られる。youtab は check と zoom の
     # サブコマンドまでを許し、引数は問わない。引数のパスを許可の書き方（前置一致）で絞っても
     # "<作業フォルダ>/../外" が通るうえ、作業フォルダまで書いた形では Claude Code が一致と
     # みなさず、check / zoom 自体が断られるため。
-    # どちらも引数は対象のパスとフレーム番号だけで、作業フォルダの外を指すパスは videotab 自身が
-    # VIDEOTAB_CONFINE で拒む（.. やリンクをたどった先で比べる）
+    # どちらも引数は対象のパスとフレーム番号だけで、作業フォルダの外を指すパスは youtab 自身が
+    # YOUTAB_CONFINE で拒む（.. やリンクをたどった先で比べる）
     allowed = ["Read", "Glob", "Grep", f"Bash({yt} check:*)", f"Bash({yt} zoom:*)"]
     for path in writable:
         rule = f"/{path.resolve()}"  # "//絶対パス" の形
@@ -138,7 +138,7 @@ def _codex_command(
     # 外れない）。-o の最後の返答は sandbox の外の codex 本体が書くので、$TMPDIR に置いたままでよい。
     # network_access=false が効くのはシェルのコマンドだけなので、ほかの機能と web 検索は別に切る。
     # シェルのコマンドには、名前に KEY・SECRET・TOKEN を含む環境変数を渡さない（Codex の既定は渡す）。
-    # モデルと推論の強さだけは、videotab が読んだ値を引数で渡す
+    # モデルと推論の強さだけは、youtab が読んだ値を引数で渡す
     extra = codex_args(settings) if settings is not None else []
     features_off = [arg for name in CODEX_FEATURES_OFF for arg in ("-c", f"features.{name}=false")]
     # 作業フォルダと、それを含むリポジトリを untrusted として渡す（そこの AGENTS.md を自動で読まない）
@@ -219,8 +219,8 @@ def _actual_model(line: str) -> str | None:
 @contextmanager
 def _image_snapshots(workdir: Path, images: list[Path]):
     """添付する画像を本体専用の一時フォルダへ写す。読み手のリンクを CLI 本体にたどらせない。"""
-    from videotab import confine, inside
-    from videotab.frames import IMAGE_EXTS, MAX_IMAGE_BYTES
+    from youtab import confine, inside
+    from youtab.frames import IMAGE_EXTS, MAX_IMAGE_BYTES
 
     root = workdir.resolve()
     with inside.stage(root.parent) as stage:
@@ -250,7 +250,7 @@ def run_agent(prompt: str, *, engine: str, workdir: Path, writable: list[Path], 
               settings: AgentSettings | None = None, on_actual=None, cancel: Cancel | None = None,
               images: list[Path] | None = None) -> AgentResult:
     if engine == "codex" and images:
-        from videotab import confine
+        from youtab import confine
 
         if settings is not None:
             validate(settings, engine)
@@ -290,16 +290,16 @@ def _run_agent(
         validate(settings, engine)
     if shutil.which(engine) is None:
         name = ENGINE_NAMES.get(engine, engine)
-        raise RuntimeError(f"{name} が見つかりません。{name} を入れてログインしたあと、videotab を起動し直してください")
+        raise RuntimeError(f"{name} が見つかりません。{name} を入れてログインしたあと、youtab を起動し直してください")
     if cancel is not None:
         cancel.check()
     if engine == "codex" and images:
         prompt += (
             "\n次の画像をこの最初のメッセージに画像として添付しています。順番とファイル名を照らし合わせて直接見てください。"
-            "\n画像を見るために Base64 を標準出力に出すことはしないでください。追加の確認は画像を開くツールと videotab zoom を使います。\n"
+            "\n画像を見るために Base64 を標準出力に出すことはしないでください。追加の確認は画像を開くツールと youtab zoom を使います。\n"
             + "\n".join(f"画像 {i}: {path}" for i, path in enumerate(image_names or images, start=1))
         )
-    fd, name = tempfile.mkstemp(prefix="videotab-codex-", suffix=".txt")
+    fd, name = tempfile.mkstemp(prefix="youtab-codex-", suffix=".txt")
     os.close(fd)
     last_message = Path(name)
     if engine == "claude":

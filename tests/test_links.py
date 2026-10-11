@@ -1,6 +1,6 @@
 """本体の書き込みのリンク対策: 作業フォルダの中にリンクを置かれても、本体は外を変えない。
 
-閉じ込め（VIDEOTAB_CONFINE）の無い、videotab serve / run とそのコマンドの動きを確かめる。
+閉じ込め（YOUTAB_CONFINE）の無い、youtab serve / run とそのコマンドの動きを確かめる。
 外に置いた木（名前・種類・中身）が、実行の前後で同じであることを主に見る。
 """
 
@@ -13,13 +13,13 @@ from trees import FOLDER_SHAPES, LAST_SHAPES, is_plain, make_outside, place_fold
 
 from fakes import FakeAgent, make_work
 
-from videotab import add, build, cli, confine, frames, inside, pipeline, read, verify, workdir
+from youtab import add, build, cli, confine, frames, inside, pipeline, read, verify, workdir
 
 
 @pytest.fixture
 def ws(tmp_path, monkeypatch):
     """作業フォルダ wd（work/<ID>）と外の木 out。閉じ込めは無し。"""
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = tmp_path / "work" / "abcdefghijk"
     wd.mkdir(parents=True)
     out = make_outside(tmp_path)
@@ -360,7 +360,7 @@ def run_read_all(wd, monkeypatch, swap):
 
 def pages_work(tmp_path):
     wd = make_work(tmp_path, n_pages=4)
-    from videotab import cli
+    from youtab import cli
 
     assert cli.main(["strip", str(wd)]) == 0 and cli.main(["pages", str(wd)]) == 0
     return wd
@@ -368,7 +368,7 @@ def pages_work(tmp_path):
 
 @pytest.mark.parametrize("shape", LAST_SHAPES)
 def test_reader_outputs_that_are_links_are_replaced(tmp_path, monkeypatch, shape):
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = pages_work(tmp_path)
     out = make_outside(tmp_path)
     before = snapshot(out)
@@ -389,7 +389,7 @@ def test_reader_outputs_that_are_links_are_replaced(tmp_path, monkeypatch, shape
 
 @pytest.mark.parametrize("shape", FOLDER_SHAPES)
 def test_readers_swapped_to_link_outside_is_refused(tmp_path, monkeypatch, shape):
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = pages_work(tmp_path)
     out = make_outside(tmp_path)
     before = snapshot(out)
@@ -407,7 +407,7 @@ def test_readers_swapped_to_link_outside_is_refused(tmp_path, monkeypatch, shape
 
 
 def test_readers_swapped_after_the_check_is_refused(tmp_path, monkeypatch):
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = pages_work(tmp_path)
     out = make_outside(tmp_path)
     before = snapshot(out)
@@ -481,7 +481,7 @@ def test_build_output_is_unchanged_without_links(ws, capsys):
 
 
 def framed(tmp_path, monkeypatch):
-    monkeypatch.delenv("VIDEOTAB_CONFINE", raising=False)
+    monkeypatch.delenv("YOUTAB_CONFINE", raising=False)
     wd = make_work(tmp_path, n_pages=2)
     out = make_outside(tmp_path)
     return wd, out
@@ -527,7 +527,7 @@ def test_pages_and_strip_replace_files_that_are_links(tmp_path, monkeypatch, sha
 def test_strip_judged_as_paper_removes_strip_folder_without_following_links(tmp_path, monkeypatch, shape):
     from test_source_judge import PAPER_LIKE, detected
 
-    from videotab import strip
+    from youtab import strip
 
     wd, out = framed(tmp_path, monkeypatch)
     (wd / "strip" / "sub").mkdir(parents=True)

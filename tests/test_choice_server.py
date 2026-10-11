@@ -7,7 +7,7 @@ from http.server import ThreadingHTTPServer
 import pytest
 from test_server import call, upload
 
-from videotab import add, pipeline, server
+from youtab import add, pipeline, server
 
 JOB = "abcdefghijk"
 

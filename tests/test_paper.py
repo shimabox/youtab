@@ -15,10 +15,10 @@ import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
-from videotab import build, cli, documents, pages, paper, pipeline, read, server
-from videotab.agent import AgentResult
-from videotab.agent_settings import Choice
-from videotab.workdir import list_frames, load_meta, read_json, save_meta
+from youtab import build, cli, documents, pages, paper, pipeline, read, server
+from youtab.agent import AgentResult
+from youtab.agent_settings import Choice
+from youtab.workdir import list_frames, load_meta, read_json, save_meta
 from pdfs import image_pdf, locked_pdf, page_pdf
 from synth import write_frames
 
@@ -128,7 +128,7 @@ def test_page_images_preserve_context_and_paper_reading_rules(tmp_path):
 
 def test_zoom_unselected_frame_preserves_whole_page_and_confines_writes(tmp_path, monkeypatch):
     wd = make_paper(tmp_path)
-    monkeypatch.setenv("VIDEOTAB_CONFINE", str(wd.resolve()))
+    monkeypatch.setenv("YOUTAB_CONFINE", str(wd.resolve()))
     assert cli.main(["zoom", str(wd), "1"]) == 0
     assert Image.open(wd / "pages" / "zoom" / "f0001_context.png").size == (960, 640)
     outside = tmp_path / "outside"
@@ -265,8 +265,8 @@ def test_pdf_renderer_that_fails_does_not_take_the_caller_down(tmp_path, monkeyp
 
 def test_pdf_command_runs_the_renderer_in_another_process_without_loading_pdfium_here(tmp_path):
     assert documents._pdf_command(tmp_path / "a.pdf", tmp_path, 200, 2400) == [
-        sys.executable, "-m", "videotab.pdfpages", str(tmp_path / "a.pdf"), str(tmp_path), "200", "2400"]
-    code = "import sys, videotab.cli, videotab.server; sys.exit('pypdfium2' in sys.modules)"
+        sys.executable, "-m", "youtab.pdfpages", str(tmp_path / "a.pdf"), str(tmp_path), "200", "2400"]
+    code = "import sys, youtab.cli, youtab.server; sys.exit('pypdfium2' in sys.modules)"
     assert subprocess.run([sys.executable, "-c", code], capture_output=True, timeout=60).returncode == 0
 
 
@@ -469,7 +469,7 @@ def test_add_photo_gives_a_command_to_resume_existing_images(tmp_path, monkeypat
     root = tmp_path / "scores"
     assert cli.main(["add", str(source), "--root", str(root)]) == 0
     output = capsys.readouterr().out
-    assert "--step strip" in output and "次: videotab frames" not in output
+    assert "--step strip" in output and "次: youtab frames" not in output
     wd = next(p for p in root.iterdir() if p.is_dir())
     seen = []
     monkeypatch.setattr(pipeline.Job, "run", lambda self: seen.append(self.workdir) or True)
@@ -496,7 +496,7 @@ def test_resolver_attaches_problem_regions_and_neighbours(tmp_path):
 
 
 def test_codex_native_images_are_snapshotted_and_do_not_follow_external_links(tmp_path):
-    from videotab import agent
+    from youtab import agent
 
     wd = make_paper(tmp_path)
     source = list_frames(wd)[0].path
@@ -787,7 +787,7 @@ def test_waiting_job_is_not_marked_as_interrupted(tmp_path, monkeypatch):
 
 
 def test_stopping_during_part_listing_keeps_part_unset(tmp_path, monkeypatch):
-    from videotab.cancel import Cancelled
+    from youtab.cancel import Cancelled
 
     wd = make_pending(tmp_path)
     def stopped(*args, **kwargs):
@@ -910,7 +910,7 @@ def test_choosing_part_is_refused_unless_waiting_with_a_valid_list(tmp_path, mon
     app, wd, job, _ = waiting_app(tmp_path, monkeypatch)
     with pytest.raises(KeyError):
         app.choose_part("no-such-song", "Guitar II", 6)
-    with pipeline.Job(wd).hold():  # videotab run など、別の実行が握っている
+    with pipeline.Job(wd).hold():  # youtab run など、別の実行が握っている
         with pytest.raises(pipeline.Busy):
             app.choose_part(wd.name, "Guitar II", 6)
     text = (wd / "paper" / "parts.json").read_text()
@@ -967,7 +967,7 @@ def test_part_is_chosen_through_the_page_api(tmp_path, monkeypatch):
     def post(body, header=True):
         req = urllib.request.Request(url + "/part", data=json.dumps(body).encode(), method="POST")
         if header:
-            req.add_header("X-Videotab", "1")
+            req.add_header("X-Youtab", "1")
         try:
             with urllib.request.urlopen(req) as r:
                 return r.status, json.loads(r.read())
@@ -1004,7 +1004,7 @@ def test_run_without_part_lists_parts_and_exits_with_wait_code(tmp_path, monkeyp
     assert calls == ["パートの洗い出し"] and pipeline.Job(wd).load()["status"] == "waiting"
     output = capsys.readouterr().out
     assert "2. Guitar II  TAB あり  6 弦の見込み" in output and "4. Drums      TAB なし（選べません）" in output
-    resume = shlex.join(["videotab", "run", wd.name, "--root", str(wd.parent.resolve())])
+    resume = shlex.join(["youtab", "run", wd.name, "--root", str(wd.parent.resolve())])
     assert f"  {resume} --part 'Guitar II'" in output and f"  {resume} --part Bass" in output
     assert "--part Drums" not in output and "途中で止まりました" not in output
     # もう一度実行しても、エージェントを起動せずに一覧を出し直す
@@ -1044,7 +1044,7 @@ def test_paper_command_with_part_ends_the_wait_and_run_continues_from_selection(
     assert cli.main(["paper", str(wd), "--part", "Bass"]) == 0
     assert load_meta(wd)["paper"] == {"part": "Bass", "strings": 4}
     data, steps = job.load(), steps_of(job)
-    resume = shlex.join(["videotab", "run", wd.name, "--root", str(wd.parent.resolve())])
+    resume = shlex.join(["youtab", "run", wd.name, "--root", str(wd.parent.resolve())])
     assert data["status"] == "stopped" and pipeline.finished_at(data) is None
     assert steps["frames"]["status"] == "done" and steps["strip"]["status"] == "pending"
     assert steps["strip"]["message"] == f"パートを指定しました（{resume} で続ける）"
@@ -1150,13 +1150,13 @@ def test_add_and_run_without_part_start_as_pending(tmp_path, monkeypatch, capsys
     wd = next(p for p in fresh.iterdir() if p.is_dir())
     assert calls == ["パートの洗い出し"] and load_meta(wd)["paper"] == {"part": None, "strings": None}
     assert pipeline.Job(wd).load()["status"] == "waiting"
-    assert f"{shlex.join(['videotab', 'run', wd.name, '--root', str(fresh.resolve())])} --part 'Guitar II'" in capsys.readouterr().out
+    assert f"{shlex.join(['youtab', 'run', wd.name, '--root', str(fresh.resolve())])} --part 'Guitar II'" in capsys.readouterr().out
 
 
 def test_page_lists_found_parts_as_text_and_lets_part_be_left_empty():
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     start = page.index("// --- 紙の楽譜のパートを選ぶ\n")
     section = page[start:page.index("// ---", start + 1)]
     # 名前はエージェントが楽譜から読んだ文字なので、文字として入れる

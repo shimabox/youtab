@@ -19,10 +19,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageOps
 
-from videotab import confine, inside
-from videotab.agent import run_agent
-from videotab.strip import find_peaks, to_gray
-from videotab.workdir import Frame, json_text, list_frames, load_meta, read_json, save_meta, write_json
+from youtab import confine, inside
+from youtab.agent import run_agent
+from youtab.strip import find_peaks, to_gray
+from youtab.workdir import Frame, json_text, list_frames, load_meta, read_json, save_meta, write_json
 
 MAX_REGIONS = 200
 MAX_PARTS = 40  # 洗い出したパートの数の上限
@@ -41,7 +41,7 @@ def _check_strings(strings) -> None:
 
 def options(part: str | None, strings: int = 6) -> dict:
     """書き起こすパートと弦数の設定。パートが無い・空なら ValueError（既定のパート名は置かない）。"""
-    from videotab.add import check_text
+    from youtab.add import check_text
 
     name = check_text("書き起こすパート", part)
     if not name:
@@ -66,7 +66,7 @@ def configure(workdir: Path, part: str, strings: int) -> None:
     selected = options(part, strings)
     meta = load_meta(workdir)
     if selected != meta.get("paper"):
-        from videotab.build import DEFAULT_TUNING
+        from youtab.build import DEFAULT_TUNING
 
         _restart_tuning(workdir, meta, "g2 d2 a1 e1" if strings == 4 else DEFAULT_TUNING, "パート")
     meta["paper"] = selected
@@ -132,7 +132,7 @@ def switch_to_screen(workdir: Path, *, notify=print) -> None:
     """
     meta = load_meta(workdir)
     if is_chosen(meta.get("paper")):
-        from videotab.build import DEFAULT_TUNING
+        from youtab.build import DEFAULT_TUNING
 
         _restart_tuning(workdir, meta, DEFAULT_TUNING, "楽譜の種類")
     meta.pop("paper", None)
@@ -175,7 +175,7 @@ def prepare(workdir: Path) -> list[Frame]:
     if not frames:
         raise ValueError(
             "切り出した画像がありません。画面では「やり直す」で「画像の切り出し」からやり直してください"
-            "（コマンドでは先に videotab frames を実行します）"
+            "（コマンドでは先に youtab frames を実行します）"
         )
     still = load_meta(workdir).get("source_kind") == "document"
     buckets: dict[int, tuple[float, Frame]] = {}
@@ -329,7 +329,7 @@ def validate_parts(data, frames: list[Frame]) -> dict:
     （add.check_text。改行などの制御文字を拒む）に通す。前後の空白だけを除き、綴りは変えない。
     知らないキーは捨てる。
     """
-    from videotab.add import check_text
+    from youtab.add import check_text
 
     if not isinstance(data, dict) or not isinstance(data.get("parts"), list):
         raise ValueError("parts の一覧がありません")
@@ -564,7 +564,7 @@ def straighten_region(im: Image.Image, box: list, tab: list, strings: int) -> tu
 
 
 def _pieces(rgb: np.ndarray, lines: list[float] | None) -> list[tuple[Image.Image, list[float]]]:
-    from videotab.pages import Setup, layout, render_piece
+    from youtab.pages import Setup, layout, render_piece
 
     if lines:
         setup = Setup((0, rgb.shape[0]), -1, (255, 255, 255), [lines])
