@@ -19,11 +19,11 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 ALPHATAB_VERSION = "1.8.4"
 SOUNDFONT_URL = f"https://cdn.jsdelivr.net/npm/@coderline/alphatab@{ALPHATAB_VERSION}/dist/soundfont/sonivox.sf3"
 
-_env = Environment(loader=PackageLoader("videotab", "templates"), autoescape=select_autoescape(("html", "j2")))
+_env = Environment(loader=PackageLoader("youtab", "templates"), autoescape=select_autoescape(("html", "j2")))
 
 
 def _vendor(name: str) -> bytes:
-    return resources.files("videotab").joinpath("templates", "vendor", name).read_bytes()
+    return resources.files("youtab").joinpath("templates", "vendor", name).read_bytes()
 
 
 def _js_string_literal(value: str) -> str:

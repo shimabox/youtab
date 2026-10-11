@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from PIL import Image, ImageDraw
 
-from videotab.workdir import Frame
+from youtab.workdir import Frame
 
 
 IMAGE_FORMATS = ("PNG", "JPEG")  # フレームの画像として開く形式（切り出しは PNG、取り込みは PNG か JPEG）
@@ -128,7 +128,7 @@ def find_staves(peaks: list[tuple[float, float]], height: int) -> list[Staff]:
     return sorted(chosen, key=lambda st: st.lines[0])
 
 
-NO_TAB_EXIT = 3  # videotab strip が「タブ譜が写っていない」で終わるときの終了コード
+NO_TAB_EXIT = 3  # youtab strip が「タブ譜が写っていない」で終わるときの終了コード
 
 
 class NoTabFound(SystemExit):
@@ -164,7 +164,7 @@ class StripResult:
 
 # 画面のタブ譜か、紙を撮った動画かを見分けるしきい値。境目は画面のタブ譜に倒す
 # （画面のタブ譜を紙と取り違えないほうを優先し、紙を画面と取り違えたら利用者が切り替える）
-PAPER_EXIT = 5  # videotab strip が「紙を撮った動画」と判定して終わるときの終了コード
+PAPER_EXIT = 5  # youtab strip が「紙を撮った動画」と判定して終わるときの終了コード
 PAPER_TAB_RATIO = 1 / 3  # タブが見えたフレームの割合がこれ以下なら紙の側（画面は 0.875 以上、紙は 0.29 以下だった）
 PAPER_LOCATED_RATIO = 1 / 2  # 補正で線が取れたフレームの割合がこれ以下なら紙の側（画面撮影は 0.91 以上、紙は 0.26 以下だった）
 UNSURE_TAB_RATIO = 2 / 3  # 画面と判定しても、タブが見えたフレームの割合がこれ未満なら切り替え方を添える
@@ -273,7 +273,7 @@ def detect(frames: list[Frame], n_samples: int = 24, band: tuple[int, int] | Non
         best is None
         or sum(s.score for s in best[1]) / (6 * len(best[1])) < 8
     ):
-        from videotab import camera
+        from youtab import camera
 
         corrected = camera.detect(frames, picks, rgbs, band)
         if corrected is not None:

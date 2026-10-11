@@ -9,9 +9,9 @@ import zipfile
 from fnmatch import fnmatchcase
 from pathlib import Path
 
-from videotab import confine, inside
-from videotab.add import INPUT_LIMITS, find_video
-from videotab.workdir import frame_name, load_meta, parse_frame_name, save_meta
+from youtab import confine, inside
+from youtab.add import INPUT_LIMITS, find_video
+from youtab.workdir import frame_name, load_meta, parse_frame_name, save_meta
 
 IMAGE_EXTS = (".png", ".jpg", ".jpeg")
 MAX_IMAGE_BYTES = 64 * 1024 * 1024  # 取り込む画像 1 枚の大きさの上限（64 MB。ZIP は展開後の大きさ）
@@ -65,7 +65,7 @@ def extract_command(ffmpeg: str, video: Path, out_pattern: Path, fps: float) -> 
 def extract(workdir: Path, fps: float = 1.0, force: bool = False) -> int:
     video = find_video(workdir)
     if video is None:
-        raise SystemExit(f"{workdir} に動画がありません（先に videotab add で動画を取り込んでください）")
+        raise SystemExit(f"{workdir} に動画がありません（先に youtab add で動画を取り込んでください）")
     # 動画が作業フォルダの外を指すリンクなら断る（外のファイルを ffmpeg に読ませない）
     root = confine.root_of(workdir)
     video = confine.guard(root / inside.rel_path(root, video), root=root)

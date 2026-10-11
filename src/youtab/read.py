@@ -19,12 +19,12 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
-from videotab import confine, inside
-from videotab.agent import run_agent, videotab_bin
-from videotab.agent_settings import ENGINE_NAMES
-from videotab.alphatex import check_bars
-from videotab.build import earlier_parts_folder, load_part, load_score, merge, norm, time_signature_before, workdir_of
-from videotab.workdir import json_text, load_meta, read_json, write_json
+from youtab import confine, inside
+from youtab.agent import run_agent, youtab_bin
+from youtab.agent_settings import ENGINE_NAMES
+from youtab.alphatex import check_bars
+from youtab.build import earlier_parts_folder, load_part, load_score, merge, norm, time_signature_before, workdir_of
+from youtab.workdir import json_text, load_meta, read_json, write_json
 
 MAX_READERS = 4
 PAGES_PER_READER = 8
@@ -156,7 +156,7 @@ def _index_parts(workdir: Path) -> tuple[list[str], dict[int, str], list[str]]:
 
 def reader_prompt(workdir: Path, label: str, pages: list[int], first: bool) -> str:
     wd = workdir.resolve()
-    yt = videotab_bin()
+    yt = youtab_bin()
     head, rows, columns = _index_parts(workdir)
     table = "\n".join(columns + [rows[p] for p in pages if p in rows])
     score_task = (
@@ -174,9 +174,9 @@ def reader_prompt(workdir: Path, label: str, pages: list[int], first: bool) -> s
             "再生用の仮のテンポと最後の返答に明記する。撮影時刻からテンポを推定してはいけません。"
         )
     paper_task = paper_instructions(workdir)
-    return f"""あなたは videotab の読み取り担当 {label} です。演奏動画に写ったタブ譜の拡大画像を読み、小節ごとの alphaTex を JSON に書きます。
+    return f"""あなたは youtab の読み取り担当 {label} です。演奏動画に写ったタブ譜の拡大画像を読み、小節ごとの alphaTex を JSON に書きます。
 
-次の「読み取りの決まり」に従ってください（手順書 AGENTS.md の抜粋。コマンドの `uv run videotab` は、下に書いた videotab のパスに読み替えてください）。
+次の「読み取りの決まり」に従ってください（手順書 AGENTS.md の抜粋。コマンドの `uv run youtab` は、下に書いた youtab のパスに読み替えてください）。
 
 <読み取りの決まり>
 {rules("3")}
@@ -207,8 +207,8 @@ HTML の出力、上に書いた以外のファイルの変更、利用者への
 
 def fix_prompt(workdir: Path, label: str, issues: list[str]) -> str:
     wd = workdir.resolve()
-    yt = videotab_bin()
-    return f"""あなたは videotab の読み取り担当 {label} です。{wd}/parts/part_{label}.json の検査で、次の誤りが残っています。
+    yt = youtab_bin()
+    return f"""あなたは youtab の読み取り担当 {label} です。{wd}/parts/part_{label}.json の検査で、次の誤りが残っています。
 
 {chr(10).join('- ' + i for i in issues)}
 
@@ -227,8 +227,8 @@ part_{label}.json の該当する小節を直してください（数合わせ�
 
 def resolve_prompt(workdir: Path, problems: list[str]) -> str:
     wd = workdir.resolve()
-    yt = videotab_bin()
-    return f"""あなたは videotab の書き起こしのまとめ役です。読み取り担当たちの結果（{wd}/parts/*.json）をつないだところ、次の問題が残りました。
+    yt = youtab_bin()
+    return f"""あなたは youtab の書き起こしのまとめ役です。読み取り担当たちの結果（{wd}/parts/*.json）をつないだところ、次の問題が残りました。
 
 {chr(10).join('- ' + p for p in problems)}
 
@@ -251,7 +251,7 @@ def resolve_prompt(workdir: Path, problems: list[str]) -> str:
 
 
 def paper_instructions(workdir: Path) -> str:
-    from videotab import paper
+    from youtab import paper
 
     if not load_meta(workdir).get("paper"):
         return ""
@@ -278,7 +278,7 @@ def has_part(path: Path) -> bool:
 
 
 def part_issues(path: Path, score: dict, workdir: Path | None = None) -> list[str]:
-    """読み取り結果 1 つの検査の誤り。workdir を省くと、videotab check と同じ決め方で探す。"""
+    """読み取り結果 1 つの検査の誤り。workdir を省くと、youtab check と同じ決め方で探す。"""
     if not path.exists():
         return ["ファイルがありません（読み取り結果が書かれていません）"]
     try:

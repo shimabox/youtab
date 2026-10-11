@@ -23,7 +23,7 @@ def fake_probe(monkeypatch):
 
     中身によらず、映像の入った動画（PROBED の幅・高さ・長さ）として通す。
     """
-    from videotab import add
+    from youtab import add
 
     seen: list[Path] = []
 
@@ -38,6 +38,6 @@ def fake_probe(monkeypatch):
 @pytest.fixture
 def plain_ids(monkeypatch, fake_probe):
     """取り込んだ曲の ID を、乱数を付けずにファイル名（拡張子を除く）にする。add.probe も偽物にする。"""
-    from videotab import add
+    from youtab import add
 
     monkeypatch.setattr(add, "new_id", lambda name: Path(name).stem)

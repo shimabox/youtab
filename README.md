@@ -1,4 +1,4 @@
-# videotab
+# youtab
 
 手元の動画ファイルや、紙の楽譜の写真・PDF から、タブ譜を書き起こします。できあがるのは、ブラウザで開いて表示・再生できる 1 枚の楽譜です。
 
@@ -8,14 +8,14 @@
     <th>できあがった楽譜（HTML）</th>
   </tr>
   <tr>
-    <td width="50%" valign="top"><img src="docs/images/screen.png" alt="videotab の画面。上に動画を送るフォーム、左に曲の一覧、右に段ごとの進み具合・曲の情報・やり直しの欄と、書き起こしたタブ譜が並ぶ"></td>
+    <td width="50%" valign="top"><img src="docs/images/screen.png" alt="youtab の画面。上に動画を送るフォーム、左に曲の一覧、右に段ごとの進み具合・曲の情報・やり直しの欄と、書き起こしたタブ譜が並ぶ"></td>
     <td width="50%" valign="top"><img src="docs/images/score.png" alt="書き起こした楽譜の HTML。五線とタブ譜の 8 小節が並び、下に再生と Guitar Pro・MIDI・alphaTex・印刷のボタンがある"></td>
   </tr>
 </table>
 
-画面の例は、自作の練習用リフ（8 小節）のタブ譜を写した合成の動画を、取り込みから読み取り・組み立て・時刻の照合まで videotab で通したものです。右は、できあがった楽譜を単独の HTML として開いたところです。
+画面の例は、自作の練習用リフ（8 小節）のタブ譜を写した合成の動画を、取り込みから読み取り・組み立て・時刻の照合まで youtab で通したものです。右は、できあがった楽譜を単独の HTML として開いたところです。
 
-しくみは図つきで [videotab のしくみ](https://shimabox.github.io/videotab/) にまとめてあります。
+しくみは図つきで [youtab のしくみ](https://shimabox.github.io/youtab/) にまとめてあります。
 
 ## できること
 
@@ -40,14 +40,14 @@ Linux（Ubuntu / Debian）では、`sudo apt install -y ffmpeg make git curl` �
 ターミナルで次を順に実行します。
 
 ```sh
-git clone https://github.com/shimabox/videotab.git   # videotab を手元にダウンロード
-cd videotab                                          # ダウンロードしたフォルダに移る
+git clone https://github.com/shimabox/youtab.git   # youtab を手元にダウンロード
+cd youtab                                          # ダウンロードしたフォルダに移る
 make setup   # 必要なものの確認と導入（何度実行しても構いません）
 make web     # 画面を起動（ブラウザで http://127.0.0.1:8765/ が開きます）
 ```
 
-- 画面を止めるときは、起動したターミナルで Ctrl+C を押します。次からは `cd videotab` のあと `make web` だけで起動できます。
-- `make` で command not found と出たら、`./setup.sh` → `uv run videotab serve` でも同じです。
+- 画面を止めるときは、起動したターミナルで Ctrl+C を押します。次からは `cd youtab` のあと `make web` だけで起動できます。
+- `make` で command not found と出たら、`./setup.sh` → `uv run youtab serve` でも同じです。
 - `make setup` で行うことの詳細は [コマンド](docs/commands.md#セットアップで行うこと) にあります。
 
 ## 使い方
@@ -62,20 +62,20 @@ make web     # 画面を起動（ブラウザで http://127.0.0.1:8765/ が開�
 画面を使わずに、コマンドで通して実行することもできます。
 
 ```sh
-uv run videotab run 動画.mp4      # または: make run VIDEO=動画.mp4
+uv run youtab run 動画.mp4      # または: make run VIDEO=動画.mp4
 ```
 
 ## ドキュメント
 
 | 文書 | 書いてあること |
 |---|---|
-| [画面の使い方](docs/usage.md) | 段の流れ、やり直し、AI の報告、曲の削除、ダウンロードの形式、画面なしの `videotab run` |
+| [画面の使い方](docs/usage.md) | 段の流れ、やり直し、AI の報告、曲の削除、ダウンロードの形式、画面なしの `youtab run` |
 | [紙の楽譜](docs/paper.md) | 写真・PDF・紙を撮った動画の取り込み、パートの選び方、動画の種類の見分け方、うまくいかないとき |
 | [読み取りのモデルと推論の強さ](docs/model-settings.md) | 曲ごとの選び方、普段の設定との関係、どの値で読んだかの確かめ方 |
 | [AI の利用量の目安](docs/token-usage.md) | 1 曲の読み取りで使うトークンの量と時間、量が増えるとき、自分で確かめる方法 |
 | [コマンド](docs/commands.md) | コマンドを 1 つずつ使う方法、コマンド一覧、作業フォルダの中身 |
 | [安全のしくみ](docs/safety.md) | 読み取りの AI に許していること・止めていること、ほかのファイルを書き換えないしくみ、アップロードと動画の扱い |
-| [AGENTS.md](AGENTS.md) | 画像の読み方の決まり（読み取りの AI が従う手順書）と、videotab を変更するときの決まり |
+| [AGENTS.md](AGENTS.md) | 画像の読み方の決まり（読み取りの AI が従う手順書）と、youtab を変更するときの決まり |
 
 ## 既知の問題
 
@@ -86,11 +86,11 @@ uv run videotab run 動画.mp4      # または: make run VIDEO=動画.mp4
 - **正確さ**: 書き起こしは画像処理と AI（Claude Code / Codex）による自動のもので、誤りが含まれることがあります。正確さは保証しません。元の動画と照らして確かめてから使ってください。
 - **著作権**: 動画、切り出した画像、書き起こしたタブ譜には、楽曲の権利者や、元の動画・タブ譜の作り手の著作物が含まれます。私的な練習の範囲で使い、公開・再配布・販売をしないでください。
 - **AI の利用**: 読み取りは、あなたの Claude Code / Codex の利用枠を使います。選んだ（選ばなければ普段の設定の）モデルと推論の強さで動くので、強い設定ほど利用枠の減り方が大きく、時間も長くなります（1 回の起動の上限は 60 分）。利用料・上限・各サービスの規約は、利用者の責任で確かめてください。
-- **無保証**: videotab は現状のまま提供します。使用によって生じたいかなる損害についても、作者は責任を負いません。
+- **無保証**: youtab は現状のまま提供します。使用によって生じたいかなる損害についても、作者は責任を負いません。
 
 ## 開発
 
-videotab 自体を改造する人向けです。決まりは [AGENTS.md](AGENTS.md) の「開発の決まり」にあります。
+youtab 自体を改造する人向けです。決まりは [AGENTS.md](AGENTS.md) の「開発の決まり」にあります。
 
 ```sh
 make test             # テストを実行（または: uv run pytest）
@@ -98,9 +98,9 @@ make test             # テストを実行（または: uv run pytest）
 
 ## ライセンス
 
-videotab は [MIT License](LICENSE) です。
+youtab は [MIT License](LICENSE) です。
 
-同梱しているものは、それぞれのライセンスに従います（出どころは [src/videotab/templates/vendor/VENDOR.md](src/videotab/templates/vendor/VENDOR.md)）。
+同梱しているものは、それぞれのライセンスに従います（出どころは [src/youtab/templates/vendor/VENDOR.md](src/youtab/templates/vendor/VENDOR.md)）。
 
 - [alphaTab](https://www.alphatab.net/) 1.8.4: MPL-2.0
-- Bravura フォント: SIL Open Font License 1.1（[Bravura-OFL.txt](src/videotab/templates/vendor/Bravura-OFL.txt)）
+- Bravura フォント: SIL Open Font License 1.1（[Bravura-OFL.txt](src/youtab/templates/vendor/Bravura-OFL.txt)）

@@ -24,7 +24,7 @@
 ## コマンドから使う
 
 ```sh
-uv run videotab run 楽譜.pdf          # 写真・ZIP・画像フォルダ・紙を撮った動画も同じ
+uv run youtab run 楽譜.pdf          # 写真・ZIP・画像フォルダ・紙を撮った動画も同じ
 ```
 
 パートを洗い出したところで、一覧と続け方を出して止まります（終了コード 4。コマンドが「パートの選択待ち」で止まったことを表す番号です）。
@@ -36,31 +36,31 @@ uv run videotab run 楽譜.pdf          # 写真・ZIP・画像フォルダ・�
   3. Bass       TAB あり  4 弦の見込み
   4. Drums      TAB なし（選べません）
 続きは、書き起こすパートを --part で指定します（弦数が見込みと違うときは --strings 4 か 6 を付ける）:
-  videotab run <ID> --part 'Guitar I'
-  videotab run <ID> --part 'Guitar II'
-  videotab run <ID> --part Bass
-一覧に無い名前も指定できます。洗い出しからやり直すなら: videotab run <ID> --step strip
+  youtab run <ID> --part 'Guitar I'
+  youtab run <ID> --part 'Guitar II'
+  youtab run <ID> --part Bass
+一覧に無い名前も指定できます。洗い出しからやり直すなら: youtab run <ID> --step strip
 ```
 
 表示された名前を `--part` に渡すと続きます。
 
 ```sh
-uv run videotab run <ID> --part 'Guitar II'
-uv run videotab run <ID> --part Bass --strings 4
+uv run youtab run <ID> --part 'Guitar II'
+uv run youtab run <ID> --part Bass --strings 4
 ```
 
 パート名が分かっているときは、最初から `--part` を付ければ止まらずに最後まで進みます（洗い出しの AI も起動しません）。
 
 ```sh
-uv run videotab run 楽譜.pdf --part Bass --strings 4
-uv run videotab run 紙の楽譜.mp4 --paper --part 'Guitar I'
+uv run youtab run 楽譜.pdf --part Bass --strings 4
+uv run youtab run 紙の楽譜.mp4 --paper --part 'Guitar I'
 ```
 
 - 動画に `--part`・`--strings` を付けるときは、`--paper` も付けます。
 - 弦数は `--strings` が優先です。選択待ちの曲で省くと、取り込むときに `--strings` で指定した弦数、一覧の見込み、6 の順で決めます。最初から `--part` を付けて `--strings` を省くと 6 です。ベースは `--strings 4` を付けてください。
 - パートを選んだあとの曲で `--part` だけを変えると、弦数は前のままです。
 - `--part` には一覧に無い名前も指定できます。そのときは注意を 1 行出して、その名前のまま進めます。
-- 選択待ちの曲で `videotab run <ID>` をもう一度実行すると、AI を起動せずに一覧を出し直します。
+- 選択待ちの曲で `youtab run <ID>` をもう一度実行すると、AI を起動せずに一覧を出し直します。
 - 画面で始めた曲をコマンドで続けることも、その逆もできます。
 - 読み取りのモデルと推論の強さは `--model`・`--effort` で選べます。ページとパートの選択にも同じ AI と設定を使います。
 
@@ -85,8 +85,8 @@ uv run videotab run 紙の楽譜.mp4 --paper --part 'Guitar I'
 - コマンド: `--paper` か `--screen` を付けます。
 
   ```sh
-  uv run videotab run <ID> --step strip --paper     # 紙の楽譜にする
-  uv run videotab run <ID> --step strip --screen    # 画面のタブ譜に戻す
+  uv run youtab run <ID> --step strip --paper     # 紙の楽譜にする
+  uv run youtab run <ID> --step strip --screen    # 画面のタブ譜に戻す
   ```
 
   `--paper` と `--screen` は同時に付けられません。`--step` は `strip` かそれより前の段にします（省くと `strip` から）。`--screen` は動画の曲だけに使えます。今と同じ種類を指定したときは、何も切り替えません。
@@ -95,7 +95,7 @@ uv run videotab run 紙の楽譜.mp4 --paper --part 'Guitar I'
 - 画面のタブ譜に戻しても、`paper/` の中身（候補・洗い出したパート・領域）は残ります。パートを選んでいた曲では、前の見出し（`score.json` の曲名・テンポ・チューニング・カポなど）を `history/` に残し、チューニングとカポを 6 弦の標準に戻して読み直します。
 - 三脚で固定して撮った紙の動画は、画面のタブ譜と判定されることがあります。そのときは紙の楽譜に変えてください。
 - 紙の楽譜として取り込むことが分かっている動画は、最初から `--paper` を付けると見分けを省きます。
-- タブ譜の線がまったく見つからない動画は、タブ譜が写っていないと判断して、動画と画像を消して止まります。紙を撮った動画だったときは、`uv run videotab run 動画.mp4 --paper` で取り込み直します。
+- タブ譜の線がまったく見つからない動画は、タブ譜が写っていないと判断して、動画と画像を消して止まります。紙を撮った動画だったときは、`uv run youtab run 動画.mp4 --paper` で取り込み直します。
 
 ## パートを選び直す・変える
 
@@ -149,7 +149,7 @@ uv run videotab run 紙の楽譜.mp4 --paper --part 'Guitar I'
 | `frames` | そのパートを確かめた元フレームの番号。省略できる |
 
 - パートは 40 個までです。AI の報告は `paper/parts.md` にあり、詳細の「AI の報告」に「パートの洗い出し」として出ます。
-- videotab は一覧を読むたびに、名前の文字と長さ・重複・件数・値の種類（文字か数か、など）を検査します。通らない一覧は空として扱います（洗い出しからやり直せます）。
+- youtab は一覧を読むたびに、名前の文字と長さ・重複・件数・値の種類（文字か数か、など）を検査します。通らない一覧は空として扱います（洗い出しからやり直せます）。
 - 選択待ちの間も、元画像・候補・一覧は残ります。画面を閉じて開き直しても選択待ちのままです。
 
 ### 領域を手で調整する（`paper/layout.json`）
@@ -157,7 +157,7 @@ uv run videotab run 紙の楽譜.mp4 --paper --part 'Guitar I'
 ページとパートの段の選択は `paper/layout.json` に残ります。座標を直したら、ページの拡大からやり直します。
 
 ```sh
-uv run videotab run <ID> --step pages
+uv run youtab run <ID> --step pages
 ```
 
 ```json
@@ -181,8 +181,8 @@ uv run videotab run <ID> --step pages
 
 ### そのほかのコマンド
 
-- `videotab zoom <ID> フレーム番号`: 選んだ段のあるフレームなら同じ段を、それ以外は元ページ全体を拡大します。
-- `videotab paper <ID> [--part 名前] [--strings 4|6]`: AI を起動せずに、候補の一覧だけを作ります。パートを省くと保存済みの指定を使い、それも無ければパートを選ぶ前の曲として保存します。
+- `youtab zoom <ID> フレーム番号`: 選んだ段のあるフレームなら同じ段を、それ以外は元ページ全体を拡大します。
+- `youtab paper <ID> [--part 名前] [--strings 4|6]`: AI を起動せずに、候補の一覧だけを作ります。パートを省くと保存済みの指定を使い、それも無ければパートを選ぶ前の曲として保存します。
 
 ### 作業フォルダの中身
 

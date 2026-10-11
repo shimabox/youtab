@@ -1,6 +1,6 @@
 """PDF のページを画像にする。取り込みの本体とは別のプロセスで動かす。
 
-    python -m videotab.pdfpages <pdf> <出力フォルダ> <最大ページ数> <長辺px>
+    python -m youtab.pdfpages <pdf> <出力フォルダ> <最大ページ数> <長辺px>
 
 壊れた PDF で PDFium が落ちたり固まったりしても本体を巻き込まないよう、PDFium を読み込むのは
 このプロセスだけにする。結果は終了コードで伝え、ページは出力フォルダの page-<n>.png に書く。

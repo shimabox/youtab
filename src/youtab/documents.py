@@ -12,8 +12,8 @@ from typing import BinaryIO
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from videotab import add, frames, inside, pdfpages
-from videotab.workdir import frame_name, list_frames, load_meta, save_meta
+from youtab import add, frames, inside, pdfpages
+from youtab.workdir import frame_name, list_frames, load_meta, save_meta
 
 EXTS = (*frames.IMAGE_EXTS, ".pdf", ".zip")
 MAX_PAGES = 200
@@ -53,7 +53,7 @@ def _image(path: Path) -> Image.Image:
 
 
 def _pdf_command(path: Path, out: Path, max_pages: int, long_edge: int) -> list[str]:
-    return [sys.executable, "-m", "videotab.pdfpages", str(path), str(out), str(max_pages), str(long_edge)]
+    return [sys.executable, "-m", "youtab.pdfpages", str(path), str(out), str(max_pages), str(long_edge)]
 
 
 def _pdf(path: Path, stage: inside.Folder) -> list[Path]:

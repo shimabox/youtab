@@ -11,10 +11,10 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from videotab import add, confine, inside
-from videotab.alphatex import Issue, check_bars, move_note_effects
-from videotab.render import render_html
-from videotab.workdir import create_json, load_meta, read_json, write_json
+from youtab import add, confine, inside
+from youtab.alphatex import Issue, check_bars, move_note_effects
+from youtab.render import render_html
+from youtab.workdir import create_json, load_meta, read_json, write_json
 
 DEFAULT_TUNING = "e4 b3 g3 d3 a2 e2"
 MAX_BAR = 9999  # 小節番号の上限（下限は 0）。大きな番号が 1 つあると、抜けている小節の一覧がその数だけ膨らむ
@@ -381,7 +381,7 @@ def run_build(workdir: Path, allow_check_errors: bool = False) -> int:
     print(f"小節 {len(merged.bars)}（1〜{max(merged.bars) if merged.bars else 0}）、読み取り結果 {len(part_files(workdir))} ファイル"
           + (f"、resolve.json で解いた食い違い {len(merged.resolved)}" if merged.resolved else ""))
     if stop:
-        print("出力を止めました。上を直してからもう一度 videotab build してください。")
+        print("出力を止めました。上を直してからもう一度 youtab build してください。")
         return 1
 
     # 拍の後ろに書かれた音の効果があると alphaTab が楽譜を読めないので、出力だけ音の中へ移す

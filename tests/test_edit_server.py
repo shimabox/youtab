@@ -10,7 +10,7 @@ import pytest
 from test_server import call, page_section
 from trees import make_outside, snapshot
 
-from videotab import build, pipeline, server
+from youtab import build, pipeline, server
 
 JOB = "abcdefghijk"
 OLD_META = {
@@ -286,7 +286,7 @@ def test_broken_json_body_is_400(served):
     before = snapshot(s.root)
     from test_server import request
 
-    assert request(f"{s.base}/api/jobs/{JOB}/info", "POST", {"X-Videotab": "1"}, b"{")[0] == 400
+    assert request(f"{s.base}/api/jobs/{JOB}/info", "POST", {"X-Youtab": "1"}, b"{")[0] == 400
     assert snapshot(s.root) == before
 
 
@@ -304,7 +304,7 @@ def test_busy_song_is_409(served, state):
     s = served
     make_song(s.root)
     before = files(s.root)
-    if state == "locked":  # videotab run などが job.lock を握っている
+    if state == "locked":  # youtab run などが job.lock を握っている
         with pipeline.Job(s.root / JOB).hold():
             assert info(s)[0] == 409
     else:
@@ -454,7 +454,7 @@ def test_page_sends_empty_link_as_null(served):
 def test_page_info_row_is_kept_between_refreshes():
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
     areas = page_section("一覧と詳細")
     assert areas.index('"p-top"') < areas.index('"p-edit"') < areas.index('"p-retry"')  # 段の下、やり直しの上
     section = page_section("曲の情報")

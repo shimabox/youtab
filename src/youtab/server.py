@@ -1,4 +1,4 @@
-"""videotab serve: 動画ファイルを送るとタブ譜まで作る画面を、手元のブラウザに出す。
+"""youtab serve: 動画ファイルを送るとタブ譜まで作る画面を、手元のブラウザに出す。
 
 127.0.0.1 でだけ待ち受ける。実行は 1 曲ずつ順番に行う（読み取りでエージェントを
 何体も動かすので、同時に何曲も走らせない）。
@@ -25,7 +25,7 @@ POST /api/jobs/<ID>/part は、紙の楽譜のパートの選択待ちの曲で�
 
 /files/ の応答には CSP の sandbox を付け、画面の iframe にも同じ値の sandbox 属性を付ける。
 allow-same-origin を与えないので、ページは画面とは別の出どころ（opaque origin）で動く。そこからの
-POST / DELETE は Origin が null になって _from_page で断られ、別の出どころからの X-Videotab 付きの
+POST / DELETE は Origin が null になって _from_page で断られ、別の出どころからの X-Youtab 付きの
 リクエストは事前確認（OPTIONS）に応じないので送られない。どの応答にも Access-Control-Allow-* は
 付けない。
 """
@@ -51,11 +51,11 @@ from pathlib import Path
 from typing import BinaryIO
 from urllib.parse import parse_qs, unquote, urlparse
 
-from videotab import __version__, add, agent_settings, confine, inside, notes_md
-from videotab.agent import DEFAULT_ENGINE, ENGINES, available_engines
-from videotab.build import page_html, retitle_score, source_link, video_creator
-from videotab.pipeline import STEP_NAMES, Busy, Job, finished_at, rebuildable, retitle, shown_steps
-from videotab.workdir import ID_PATTERN, MAX_JSON_BYTES, load_meta, read_json, save_meta, write_json
+from youtab import __version__, add, agent_settings, confine, inside, notes_md
+from youtab.agent import DEFAULT_ENGINE, ENGINES, available_engines
+from youtab.build import page_html, retitle_score, source_link, video_creator
+from youtab.pipeline import STEP_NAMES, Busy, Job, finished_at, rebuildable, retitle, shown_steps
+from youtab.workdir import ID_PATTERN, MAX_JSON_BYTES, load_meta, read_json, save_meta, write_json
 
 # /files/ がそのまま返すファイルの種類。.html は入れない（タブ譜のページは App.page が組み立てる）
 SERVED_SUFFIXES = {".png", ".jpg", ".alphatex", ".md"}
@@ -90,18 +90,18 @@ class App:
             try:
                 shutil.rmtree(path)
             except OSError as e:
-                print(f"videotab: {Path(path).name} を消せませんでした: {e}", flush=True)
+                print(f"youtab: {Path(path).name} を消せませんでした: {e}", flush=True)
         # 前回、アップロードの受け取りや切り出しの途中で止まった一時フォルダ（使っている処理があるものは残す）
         try:
             inside.sweep_stages(self.root)
         except (OSError, SystemExit) as e:
-            print(f"videotab: 一時フォルダを片付けられませんでした（{inside.reason(e)}）", flush=True)
+            print(f"youtab: 一時フォルダを片付けられませんでした（{inside.reason(e)}）", flush=True)
         for d in self.root.iterdir():
             if (d / "job.json").exists() and not Job(d).is_locked():
                 try:
                     Job(d).mark_interrupted()
                 except (Exception, SystemExit) as e:  # noqa: BLE001 - 読めない job.json の曲は飛ばし、起動は止めない
-                    print(f"videotab: {d.name} の中断を記録できませんでした（{inside.reason(e)}）", flush=True)
+                    print(f"youtab: {d.name} の中断を記録できませんでした（{inside.reason(e)}）", flush=True)
         threading.Thread(target=self._worker, daemon=True).start()
 
     # --- 実行の順番待ち
@@ -125,14 +125,14 @@ class App:
                 try:
                     job.mark_interrupted()
                 except BaseException as e2:  # noqa: BLE001 - 中断の記録に失敗しても、次の曲に進む
-                    print(f"videotab: {job_id} の中断を記録できませんでした（{inside.reason(e2)}）", flush=True)
+                    print(f"youtab: {job_id} の中断を記録できませんでした（{inside.reason(e2)}）", flush=True)
             finally:
                 with self.lock:
                     self.running = None
                     self.running_job = None
 
     def _busy(self, job_id: str) -> bool:
-        """この画面か、別のプロセス（videotab run）で実行中・順番待ちか。self.lock を握って呼ぶ。"""
+        """この画面か、別のプロセス（youtab run）で実行中・順番待ちか。self.lock を握って呼ぶ。"""
         return job_id == self.running or job_id in self.waiting or Job(self.root / job_id).is_locked()
 
     def _entry(self, job_id: str) -> os.DirEntry | None:
@@ -165,7 +165,7 @@ class App:
             raise ValueError("読み取りに使う AI の指定（engine）が違います")
         if not available_engines()[engine]:
             name = agent_settings.ENGINE_NAMES[engine]
-            raise ValueError(f"{name} が見つかりません。{name} を入れてログインしたあと、videotab を起動し直してください")
+            raise ValueError(f"{name} が見つかりません。{name} を入れてログインしたあと、youtab を起動し直してください")
 
     def check_upload(
         self,
@@ -189,7 +189,7 @@ class App:
         """
         self._check_engine(engine)
         choice = agent_settings.normalize_choice(engine, model, effort)
-        from videotab import documents
+        from youtab import documents
 
         checker = documents.check_request if Path(name).suffix.lower() in documents.EXTS else add.check_request
         checker(name, length, title=title, creator=creator, source_url=source_url)
@@ -221,7 +221,7 @@ class App:
         洗い出して止まる）。part があれば、弦数は strings（None なら 6）。
         """
         fields = {"title": title, "creator": creator, "source_url": source_url}
-        from videotab import documents, paper
+        from youtab import documents, paper
 
         choice = self.check_upload(name, length, engine, model, effort, **fields,
                                    paper_mode=paper_mode, part=part, strings=strings)
@@ -252,7 +252,7 @@ class App:
         種類として切り替え、帯と線の検出の段（それより前の段を指定したときは、その段）からやり直す。
         今の種類と同じなら切り替えず、指定された段からやり直す。写真・PDF・ZIP の曲は紙の楽譜だけ。
         """
-        from videotab import paper
+        from youtab import paper
 
         self._check_engine(engine)
         if step is not None and step not in STEP_NAMES:
@@ -331,7 +331,7 @@ class App:
         合わなければ ValueError、曲でなければ KeyError、実行中・順番待ちなら Busy。
         一覧（parts.json）はエージェントが書いたファイルなので、ここでも検査し直したものを使う。
         """
-        from videotab import paper
+        from youtab import paper
 
         with self.lock:  # 状態の確認・書き換え・登録を 1 つの排他区間で行う
             self._folder(job_id)
@@ -359,7 +359,7 @@ class App:
     def cancel(self, job_id: str) -> None:
         """実行中の曲を止める（子プロセスを止め、止めたと記録する）か、順番待ちから外す。
 
-        実行中でも順番待ちでもなければ ValueError。別のプロセス（videotab run）で実行中なら Busy。
+        実行中でも順番待ちでもなければ ValueError。別のプロセス（youtab run）で実行中なら Busy。
         実行中の曲は、合図を出したところで返る（止まり終えるまでは実行中のまま）。
         """
         with self.lock:
@@ -374,7 +374,7 @@ class App:
                 return
         if Job(self.root / job_id).is_locked():
             raise Busy(
-                "ターミナルで動かしている別の videotab（videotab run など）が実行中なので、画面からは止められません。"
+                "ターミナルで動かしている別の youtab（youtab run など）が実行中なので、画面からは止められません。"
                 "止めるときは、そのターミナルで control + C を押してください"
             )
         raise ValueError("実行中でも順番待ちでもありません")
@@ -410,9 +410,9 @@ class App:
         try:
             shutil.rmtree(gone)  # 中のリンクはたどらず、リンクだけを消す
         except OSError:
-            print(f"videotab: {job_id} を消しきれませんでした（{gone.name} が残っています）", flush=True)
+            print(f"youtab: {job_id} を消しきれませんでした（{gone.name} が残っています）", flush=True)
             raise
-        print(f"videotab: {job_id} を消しました", flush=True)
+        print(f"youtab: {job_id} を消しました", flush=True)
 
     def _busy_folder(self, job_id: str, target: os.stat_result) -> bool:
         """消す・書き換える曲（フォルダの実体が target）が、この画面で実行中・順番待ちか。self.lock を握って呼ぶ。
@@ -513,7 +513,7 @@ class App:
             if job_id in self.waiting:
                 return "queued"
         if Job(self.root / job_id).is_locked():
-            return "running"  # videotab run など、別のプロセスで実行中
+            return "running"  # youtab run など、別のプロセスで実行中
         return "failed" if status == "running" else status
 
     def detail(self, job_id: str) -> dict:
@@ -535,7 +535,7 @@ class App:
                 notes[who] = (d / "paper" / name).read_text(encoding="utf-8")
         parts = []
         if isinstance(meta.get("paper"), dict):
-            from videotab import paper
+            from youtab import paper
 
             parts = paper.load_parts(d)  # エージェントが書いたファイルなので、出すたびに検査し直す
         previews = []
@@ -716,7 +716,7 @@ def _read_own_json(workdir: Path, name: str) -> dict | None:
 
 def _paper_options(part: str | None, strings: int | None) -> dict:
     """新しく取り込む紙の楽譜の設定。part が無ければパートを選ぶ前の設定（弦数だけを確かめる）。"""
-    from videotab import paper
+    from youtab import paper
 
     if part is None:
         return paper.pending_options(strings)
@@ -728,7 +728,7 @@ def _source_choice(meta: dict) -> dict | None:
 
     meta.json は読み手も書けるので、知っている項目だけを確かめ直して出す。
     """
-    from videotab.strip import frame_counts
+    from youtab.strip import frame_counts
 
     choice = meta.get("source_choice")
     if not isinstance(choice, dict):
@@ -773,11 +773,11 @@ def _page_name(d: Path) -> str | None:
 
 
 def make_handler(app: App):
-    page = resources.files("videotab").joinpath("templates", "app.html").read_bytes()
+    page = resources.files("youtab").joinpath("templates", "app.html").read_bytes()
     page = page.replace(b"__VERSION__", html.escape(__version__).encode())  # 見出しの横の版
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = "videotab"
+        server_version = "youtab"
 
         def log_message(self, fmt, *args):  # 画面のポーリングで端末を埋めない
             pass
@@ -868,7 +868,7 @@ def make_handler(app: App):
 
         def _from_page(self) -> bool:
             """ほかのサイトのページから勝手に操作されないよう、画面が付ける見出しと、同じ出どころを求める。"""
-            return self._local_host() and self._same_origin() and self.headers.get("X-Videotab") == "1"
+            return self._local_host() and self._same_origin() and self.headers.get("X-Youtab") == "1"
 
         def _length(self, limit: int, *, required: bool) -> int | tuple[int, str]:
             """Content-Length の値。使えなければ（応答の状態, 文言）。本文は読まない。"""
@@ -999,7 +999,7 @@ def serve(root: Path, port: int = 8765, open_browser: bool = True) -> None:
     app = App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(app))
     url = f"http://127.0.0.1:{httpd.server_address[1]}/"
-    print(f"videotab: {url} （止めるときは Ctrl+C）")
+    print(f"youtab: {url} （止めるときは Ctrl+C）")
     if open_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()
     try:

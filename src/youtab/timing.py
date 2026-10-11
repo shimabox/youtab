@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from videotab.alphatex import Bar
+from youtab.alphatex import Bar
 
 
 @dataclass

@@ -1,4 +1,4 @@
-"""videotab add / videotab run FILE|ID: 取り込み、対象の決め方、続行の案内。"""
+"""youtab add / youtab run FILE|ID: 取り込み、対象の決め方、続行の案内。"""
 
 import json
 import shlex
@@ -6,8 +6,8 @@ import shlex
 import pytest
 from test_links import fake_ffmpeg
 
-from videotab import cli, frames, pipeline
-from videotab.workdir import ID_PATTERN
+from youtab import cli, frames, pipeline
+from youtab.workdir import ID_PATTERN
 
 
 def video(tmp_path, name="clip.mp4"):
@@ -21,10 +21,10 @@ def songs(root):
 
 
 def printed_command(out, head):
-    """出力の中の「head <コマンド>」の行から、videotab の引数を取り出す。"""
+    """出力の中の「head <コマンド>」の行から、youtab の引数を取り出す。"""
     line = next(line for line in out.splitlines() if line.startswith(head))
     words = shlex.split(line.removeprefix(head))
-    assert words[0] == "videotab"
+    assert words[0] == "youtab"
     return words[1:]
 
 
@@ -196,7 +196,7 @@ def test_run_checks_choice_before_adding(tmp_path, fake_probe, seen_runs):
 
 
 def test_run_refuses_non_video_with_message(tmp_path, seen_runs, monkeypatch):
-    from videotab import add
+    from youtab import add
 
     def broken(path):
         raise add.NotVideo("映像の入った動画として読めません")
@@ -253,7 +253,7 @@ def test_documents_are_recorded_as_paper_chosen_by_user(tmp_path, seen_runs, com
 
 
 def test_paper_command_records_user_choice_only_when_song_becomes_paper(tmp_path, monkeypatch, fake_probe):
-    from videotab import paper
+    from youtab import paper
 
     monkeypatch.setattr(paper, "prepare", lambda _: [])
     root = tmp_path / "work"
@@ -413,10 +413,10 @@ def test_step_choices_start_with_add(tmp_path, capsys):
 
 
 def test_version_option_prints_package_version(capsys):
-    import videotab
+    import youtab
 
     with pytest.raises(SystemExit) as exc:
         cli.main(["--version"])
     assert exc.value.code == 0
-    assert capsys.readouterr().out.strip() == f"videotab {videotab.__version__}"
-    assert videotab.__version__ != "0.0.0"  # pyproject.toml の version を読めている
+    assert capsys.readouterr().out.strip() == f"youtab {youtab.__version__}"
+    assert youtab.__version__ != "0.0.0"  # pyproject.toml の version を読めている

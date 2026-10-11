@@ -1,7 +1,7 @@
 """作業フォルダの外を指すパス（.. やリンク）を、外を調べずに見分ける。
 
-読み取りのエージェントから実行された videotab check / zoom は、作業フォルダの中に閉じ込める。
-読み手は環境変数 VIDEOTAB_CONFINE に作業フォルダを入れて起動される（agent.py）。これが無いとき
+読み取りのエージェントから実行された youtab check / zoom は、作業フォルダの中に閉じ込める。
+読み手は環境変数 YOUTAB_CONFINE に作業フォルダを入れて起動される（agent.py）。これが無いとき
 （人や本体が実行したとき）、guard に基準の作業フォルダ root を渡さなければ、ここの確認は何もしない。
 本体が書く・消す・移すときは、閉じ込めの有無によらず root_of の作業フォルダを基準に guard を使う
 （inside.py）。
@@ -19,7 +19,7 @@ import stat
 from contextlib import contextmanager
 from pathlib import Path
 
-CONFINE_ENV = "VIDEOTAB_CONFINE"
+CONFINE_ENV = "YOUTAB_CONFINE"
 MAX_LINKS = 40  # たどるリンクの数の上限（循環を断る）
 
 

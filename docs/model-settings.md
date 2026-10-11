@@ -42,11 +42,11 @@
 - やり直しの行は、その曲で前回選んだ値から始まります。行の中で読み取りの AI を切り替えると、ブラウザがその AI で覚えた選択（無ければ普段の設定）になります。
 - 普段の設定の値そのものは `job.json` に残しません。普段の設定のままやり直すと、その時点の普段の設定で読みます。
 
-## `videotab run` で選ぶ
+## `youtab run` で選ぶ
 
 ```sh
-uv run videotab run 動画.mp4 --model opus --effort max
-uv run videotab run 動画.mp4 --engine codex --model gpt-6-astra --effort xhigh
+uv run youtab run 動画.mp4 --model opus --effort max
+uv run youtab run 動画.mp4 --engine codex --model gpt-6-astra --effort xhigh
 ```
 
 - 受け付ける値は画面と同じです（Claude Code のモデルは呼び名か正式な名前、Codex のモデルは名前）。使えない値なら、作業フォルダを変えずに止まります。
@@ -57,22 +57,22 @@ uv run videotab run 動画.mp4 --engine codex --model gpt-6-astra --effort xhigh
 
 ## 優先順位
 
-videotab で選んだ値がいちばん優先されます。選ばなかった項目は、普段の設定（Claude Code では、環境変数があればそちらが先）で決まり、それも無ければ Claude Code / Codex 自体やモデルの標準で動きます。細かくは次のとおりです。括弧の中は、読み取りの AI を起動するときに値を渡す引数です。
+youtab で選んだ値がいちばん優先されます。選ばなかった項目は、普段の設定（Claude Code では、環境変数があればそちらが先）で決まり、それも無ければ Claude Code / Codex 自体やモデルの標準で動きます。細かくは次のとおりです。括弧の中は、読み取りの AI を起動するときに値を渡す引数です。
 
 | AI | 項目 | 優先順位（左が強い） |
 |---|---|---|
-| Claude Code | モデル | videotab で選んだ値（`--model`）> 環境変数 `ANTHROPIC_MODEL` > 普段の設定の `model`（`--settings`）> Claude Code の標準 |
-| Claude Code | 推論の強さ | videotab で選んだ値（`--effort`）> 環境変数 `CLAUDE_CODE_EFFORT_LEVEL` > 普段の設定の `modelSettings`（`--settings`）> モデルの標準 |
-| Codex | モデル | videotab で選んだ値（`-m`）> 普段の設定のトップレベルの `model`（`-m`）> Codex の標準 |
-| Codex | 推論の強さ | videotab で選んだ値（`-c`）> 普段の設定の `model_reasoning_effort`（`-c`）> Codex の標準 |
+| Claude Code | モデル | youtab で選んだ値（`--model`）> 環境変数 `ANTHROPIC_MODEL` > 普段の設定の `model`（`--settings`）> Claude Code の標準 |
+| Claude Code | 推論の強さ | youtab で選んだ値（`--effort`）> 環境変数 `CLAUDE_CODE_EFFORT_LEVEL` > 普段の設定の `modelSettings`（`--settings`）> モデルの標準 |
+| Codex | モデル | youtab で選んだ値（`-m`）> 普段の設定のトップレベルの `model`（`-m`）> Codex の標準 |
+| Codex | 推論の強さ | youtab で選んだ値（`-c`）> 普段の設定の `model_reasoning_effort`（`-c`）> Codex の標準 |
 
 - Claude Code で選んだ項目は `--model` / `--effort` で渡し、その項目は普段の設定から渡しません。推論の強さを選んだときは、環境変数 `CLAUDE_CODE_EFFORT_LEVEL` を読み取りの AI に渡しません（外したことが job.log に 1 行出ます）。`ANTHROPIC_MODEL` はそのまま渡しますが、選んだモデル（`--model`）が優先します。
 - Claude Code でモデルだけ選ぶと、推論の強さは、普段の設定の `modelSettings` のうち実際のモデルの項目の値（無ければモデルの標準）になります。
-- Codex は読み取りの AI にユーザー設定を読ませないので、選ばなかった項目には videotab が読んだ普段の値を渡します。普段の推論の強さはモデルごとではないので、選んだモデルがその強さに対応していなければ起動に失敗します。そのときは推論の強さも選んでください。
+- Codex は読み取りの AI にユーザー設定を読ませないので、選ばなかった項目には youtab が読んだ普段の値を渡します。普段の推論の強さはモデルごとではないので、選んだモデルがその強さに対応していなければ起動に失敗します。そのときは推論の強さも選んでください。
 
 ## 普段の設定
 
-「普段の設定」を選んだ項目は、videotab がユーザー設定のファイルから読みます。トップレベルは、ファイルのいちばん外側の階層です（JSON なら最も外側の `{ }` の直下、TOML なら `[...]` の見出しより前）。
+「普段の設定」を選んだ項目は、youtab がユーザー設定のファイルから読みます。トップレベルは、ファイルのいちばん外側の階層です（JSON なら最も外側の `{ }` の直下、TOML なら `[...]` の見出しより前）。
 
 - 設定は「読み取り」の段が始まるときに読みます。変えたあとに「やり直す」と、新しい値で読みます。
 - 複数のタブで Claude Code / Codex を使っている場合は、どのタブかに関係なく、ユーザー設定のファイルに最後に保存された値が使われます（保存されない選択の扱いは下の「普段の設定の変え方」、環境変数がある場合は「そのほか」を見てください）。
@@ -84,7 +84,7 @@ videotab で選んだ値がいちばん優先されます。選ばなかった�
 
 ## 普段の設定の変え方
 
-普段の設定そのものを変える方法です。読み取りだけ変えるなら、画面か `videotab run` で選びます。
+普段の設定そのものを変える方法です。読み取りだけ変えるなら、画面か `youtab run` で選びます。
 
 ### Claude Code
 
@@ -98,7 +98,7 @@ videotab で選んだ値がいちばん優先されます。選ばなかった�
   }
   ```
 
-- 設定ファイルの推論の強さで渡すのは `low` / `medium` / `high` / `xhigh` だけです。`/effort max` は保存されないので、普段の設定としては読み取りに使われません。`max` で読むときは、画面か `videotab run --effort max` で推論の強さに `max` を選びます。
+- 設定ファイルの推論の強さで渡すのは `low` / `medium` / `high` / `xhigh` だけです。`/effort max` は保存されないので、普段の設定としては読み取りに使われません。`max` で読むときは、画面か `youtab run --effort max` で推論の強さに `max` を選びます。
 - トップレベルの `effortLevel`（古い形式）は読みません。渡すと全モデルに効いてしまうためです。これだけで推論の強さを決めていると、読み取りはモデルの標準の強さになります。`/effort` で選び直すと `modelSettings` に保存され、読み取りにも反映されます。
 
 ### Codex
@@ -116,35 +116,35 @@ videotab で選んだ値がいちばん優先されます。選ばなかった�
 
 ## 確かめ方
 
-- 「読み取り」の段の結果欄と job.log に、どのモデル・推論の強さで読むかが出どころ付きで出ます（`（videotab で指定）`、`（普段の設定）`、`（環境変数で指定）`、`Claude Code の標準` / `Codex の標準`、`モデルの標準`）。
+- 「読み取り」の段の結果欄と job.log に、どのモデル・推論の強さで読むかが出どころ付きで出ます（`（youtab で指定）`、`（普段の設定）`、`（環境変数で指定）`、`Claude Code の標準` / `Codex の標準`、`モデルの標準`）。
 
   ```text
   読み取りの設定: Claude Code・モデル opus（普段の設定）・推論の強さはモデルごとの普段の設定
   [A] 実際のモデル claude-opus-5-5・推論の強さ high（普段の設定）
   ```
 
-  画面か `videotab run` で選んだ項目は `（videotab で指定）` と出ます。
+  画面か `youtab run` で選んだ項目は `（youtab で指定）` と出ます。
 
   ```text
-  読み取りの設定: Claude Code・モデル sonnet（videotab で指定）・推論の強さ max（videotab で指定）
-  [A] 実際のモデル claude-sonnet-5・推論の強さ max（videotab で指定）
-  読み取りの設定: Codex・モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（videotab で指定）
+  読み取りの設定: Claude Code・モデル sonnet（youtab で指定）・推論の強さ max（youtab で指定）
+  [A] 実際のモデル claude-sonnet-5・推論の強さ max（youtab で指定）
+  読み取りの設定: Codex・モデル gpt-6-astra（普段の設定）・推論の強さ xhigh（youtab で指定）
   ```
 
-- Claude Code では、起動ごとに実際に使われたモデルが job.log に出て、結果欄も最初に分かった起動の内容に変わります。推論の強さは Claude Code が報告した値ではなく、選んだ値・渡した設定・環境変数から videotab が対応づけた値です。推論の強さを選んでいないとき、`modelSettings` のモデル名と実際のモデル名が完全に一致しないと（`claude-opus-5-5[1m]` のように名前の後ろに付く `[1m]` なども含めて比べます）、`モデルの標準` と表示されます。
+- Claude Code では、起動ごとに実際に使われたモデルが job.log に出て、結果欄も最初に分かった起動の内容に変わります。推論の強さは Claude Code が報告した値ではなく、選んだ値・渡した設定・環境変数から youtab が対応づけた値です。推論の強さを選んでいないとき、`modelSettings` のモデル名と実際のモデル名が完全に一致しないと（`claude-opus-5-5[1m]` のように名前の後ろに付く `[1m]` なども含めて比べます）、`モデルの標準` と表示されます。
 - Codex では、Codex 自身が出す冒頭の出力（model・reasoning effort）がそのままログに流れます。
 
 ## そのほか
 
-- 普段の設定は普段の Claude Code / Codex と共通なので、変えると普段の利用にも効きます。読み取りだけ変えたいときは、画面か `videotab run` で選びます（選んだ値は普段の設定を書き換えません）。
-- 設定に値があれば、videotab 側で何もしなくても読み取りはその値で動きます。強い設定では時間と利用枠が増え、1 回の起動の上限（60 分）に届くことがあります。量の目安は [AI の利用量の目安](token-usage.md) にあります。
+- 普段の設定は普段の Claude Code / Codex と共通なので、変えると普段の利用にも効きます。読み取りだけ変えたいときは、画面か `youtab run` で選びます（選んだ値は普段の設定を書き換えません）。
+- 設定に値があれば、youtab 側で何もしなくても読み取りはその値で動きます。強い設定では時間と利用枠が増え、1 回の起動の上限（60 分）に届くことがあります。量の目安は [AI の利用量の目安](token-usage.md) にあります。
 - 設定に無いときは何も渡さず、Claude Code / Codex 自体とモデルの標準で動きます。
 - 設定ファイルが無ければ、何も出さずに既定で動きます。
 - ファイルが壊れている（設定のファイルの書き方である JSON / TOML として読めない、コメント付きの JSON など）・値が使えないときは、その値を渡さず、job.log に理由を 1 行出して読み取りは続けます。
-- 画面や `videotab run` で選んだ値が使えないとき（`job.json` を手で書き換えた場合など）は、普段の設定に落とさず、AI を起動せずに「読み取り」の段を失敗にします。「やり直す」で選び直してください。
-- 環境変数（`CLAUDE_CONFIG_DIR`・`ANTHROPIC_MODEL` など）で Claude Code / Codex を設定している場合も、普段と同じように効きます。画面や `videotab run` で選んだ項目は、それより優先します。
+- 画面や `youtab run` で選んだ値が使えないとき（`job.json` を手で書き換えた場合など）は、普段の設定に落とさず、AI を起動せずに「読み取り」の段を失敗にします。「やり直す」で選び直してください。
+- 環境変数（`CLAUDE_CONFIG_DIR`・`ANTHROPIC_MODEL` など）で Claude Code / Codex を設定している場合も、普段と同じように効きます。画面や `youtab run` で選んだ項目は、それより優先します。
 - 反映されない設定: Claude Code のトップレベルの `effortLevel`・プロジェクトやローカルの設定、Codex の profile。
-- 会社などの管理者が配る設定（管理者の設定）は、普段の設定を読ませない起動（`--restricted`）でも適用されます。管理者の設定にモデルの制限や `modelOverrides`、`effortLevel` がある環境や、モデルを別の提供元のサービス経由で使う環境では、渡した値が通らないか、表示と違う強さになることがあります。画面や `videotab run` で選んだ値も同じです。
+- 会社などの管理者が配る設定（管理者の設定）は、普段の設定を読ませない起動（`--restricted`）でも適用されます。管理者の設定にモデルの制限や `modelOverrides`、`effortLevel` がある環境や、モデルを別の提供元のサービス経由で使う環境では、渡した値が通らないか、表示と違う強さになることがあります。画面や `youtab run` で選んだ値も同じです。
 - モデルが推論の強さに対応していないと、起動に失敗します（段の失敗としてログに出ます）。普段の設定の Codex の推論の強さは形だけを確かめて渡すので、打ち間違いも起動してから失敗します。
 - `--settings` と `-c` の形を確かめた版は Claude Code 2.1.283、Codex 0.156.1 です。これらや `--model` / `--effort` を同じ形で受け付けない古い版では、値を渡すと起動に失敗します。
 

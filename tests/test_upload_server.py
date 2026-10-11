@@ -12,8 +12,8 @@ import pytest
 from conftest import PROBED
 from test_server import call, upload
 
-from videotab import add, inside, pipeline, server
-from videotab.workdir import ID_PATTERN
+from youtab import add, inside, pipeline, server
+from youtab.workdir import ID_PATTERN
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def raw(s, headers, body=b"", *, path=None, query=None, close_write=False):
     return status, json.loads(data.split(b"\r\n\r\n", 1)[1])
 
 
-PAGE = {"X-Videotab": "1"}
+PAGE = {"X-Youtab": "1"}
 
 
 def test_upload_success_creates_song_and_queues_it(up):
@@ -230,9 +230,9 @@ def test_upload_records_source_choice_only_when_paper_is_given(up):
 def test_page_has_file_picker_and_drop_and_no_link_input():
     from importlib import resources
 
-    page = resources.files("videotab").joinpath("templates", "app.html").read_text(encoding="utf-8")
-    assert 'type="file"' in page and '"/api/uploads?"' in page and 'setRequestHeader("X-Videotab", "1")' in page
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    assert 'type="file"' in page and '"/api/uploads?"' in page and 'setRequestHeader("X-Youtab", "1")' in page
     assert "upload.onprogress" in page and ".abort()" in page
     assert 'window.addEventListener("drop"' in page and 'window.addEventListener("dragover"' in page
     assert 'type="url"' not in page and "input[type=url]" not in page and "d.url" not in page
-    assert '"videotab.agentChoice"' in page
+    assert '"youtab.agentChoice"' in page

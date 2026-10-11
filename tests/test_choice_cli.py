@@ -1,12 +1,12 @@
-"""videotab run --model / --effort と、保存された選択の引き継ぎ。"""
+"""youtab run --model / --effort と、保存された選択の引き継ぎ。"""
 
 import json
 
 import pytest
 from fakes import FakeAgent, make_work
 
-from videotab import cli, pipeline, read
-from videotab.agent_settings import AgentSettings, Choice
+from youtab import cli, pipeline, read
+from youtab.agent_settings import AgentSettings, Choice
 
 JOB = "abcdefghijk"
 

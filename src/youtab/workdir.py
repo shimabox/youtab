@@ -22,7 +22,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from videotab import confine, inside
+from youtab import confine, inside
 
 WORK_ROOT = Path("work")
 # 作業フォルダの ID（work/ の直下の名前）。英数字で始まるので、コマンドの引数でオプションと紛れない。
@@ -40,7 +40,7 @@ def resolve_target(target: str) -> Path:
     return WORK_ROOT / target
 
 
-# 読むときの confine.guard は、読み取りのエージェントから実行されたとき（VIDEOTAB_CONFINE あり）
+# 読むときの confine.guard は、読み取りのエージェントから実行されたとき（YOUTAB_CONFINE あり）
 # だけ、作業フォルダの外を指すパス（リンク）を断る。無いときは何もしない。
 # 書くときは閉じ込めの有無によらず inside の部品を通し、リンクをたどって作業フォルダの外に書かない
 # （途中のフォルダが外へのリンクなら断り、書く名前がリンクなどなら通常のファイルに置き換える）。

@@ -3,8 +3,8 @@
 import pytest
 from fakes import make_work
 
-from videotab import cli, strip
-from videotab.workdir import list_frames, load_meta, save_meta
+from youtab import cli, strip
+from youtab.workdir import list_frames, load_meta, save_meta
 
 
 def detected(with_tab, used=24, located=None, total=100):
@@ -42,7 +42,7 @@ def test_paper_needs_correction_and_few_frames_with_tab_and_few_located_frames(r
 
 
 def test_thresholds_and_exit_code_do_not_collide():
-    from videotab import pipeline
+    from youtab import pipeline
 
     assert (strip.PAPER_TAB_RATIO, strip.PAPER_LOCATED_RATIO, strip.UNSURE_TAB_RATIO) == (1 / 3, 1 / 2, 2 / 3)
     assert strip.PAPER_EXIT == 5 and len({1, strip.NO_TAB_EXIT, pipeline.PART_WAIT_EXIT, strip.PAPER_EXIT}) == 4
@@ -68,7 +68,7 @@ def test_judged_record_has_counts_and_located_frames_only_with_correction():
         assert strip.paper_counts(bad) is None, bad
 
 
-# --- videotab strip
+# --- youtab strip
 
 
 @pytest.fixture
@@ -102,8 +102,8 @@ def test_strip_judged_as_paper_becomes_pending_paper_and_exits_with_paper_code(w
     assert not (wd / "strip").exists() and len(list_frames(wd)) == 3
     out = capsys.readouterr().out
     assert "紙を撮った動画と判断しました（タブが見えた画像 7/24 枚、線の位置を補正できた画像 25/97 枚）" in out
-    assert f"videotab run {wd.name} --root {wd.parent.resolve()} --step strip（パートの洗い出し）" in out
-    assert "--step strip --screen" in out and "videotab pages" not in out
+    assert f"youtab run {wd.name} --root {wd.parent.resolve()} --step strip（パートの洗い出し）" in out
+    assert "--step strip --screen" in out and "youtab pages" not in out
 
 
 @pytest.mark.parametrize("result, choice", [
@@ -122,7 +122,7 @@ def test_strip_judged_as_screen_only_adds_the_record(work, capsys, result, choic
     assert meta == {**before, "strip": expected, "source_choice": choice}
     assert sorted(p.name for p in (wd / "strip").iterdir()) == [f"check_{n:04d}.png" for n in (1, 2, 3)]
     out = capsys.readouterr().out
-    assert strip.source_note(result) in out and f"次: videotab pages {wd}" in out
+    assert strip.source_note(result) in out and f"次: youtab pages {wd}" in out
 
 
 @pytest.mark.parametrize("case", ["band", "by-user"])

@@ -1,7 +1,7 @@
 import pytest
 
-from videotab.alphatex import check_bars
-from videotab.timing import play_order, schedule
+from youtab.alphatex import check_bars
+from youtab.timing import play_order, schedule
 
 
 def parsed(bars: dict[int, str]):

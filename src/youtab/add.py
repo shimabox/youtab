@@ -27,8 +27,8 @@ import unicodedata
 from pathlib import Path
 from typing import BinaryIO
 
-from videotab import inside
-from videotab.workdir import WORK_ROOT, save_meta
+from youtab import inside
+from youtab.workdir import WORK_ROOT, save_meta
 
 VIDEO_EXTS = (".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi")
 MAX_BYTES = 4 * 1024**3  # 取り込める動画の大きさの上限（4 GB）
@@ -291,4 +291,4 @@ def _remove_workdir(place: Path, job_id: str) -> None:
         with inside.open_dir(place) as top:
             inside.remove(top, job_id, ignore_errors=True)
     except (OSError, SystemExit) as e:
-        print(f"videotab: 作業フォルダ {job_id} を消せませんでした（{inside.reason(e)}）", flush=True)
+        print(f"youtab: 作業フォルダ {job_id} を消せませんでした（{inside.reason(e)}）", flush=True)

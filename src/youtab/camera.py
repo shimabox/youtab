@@ -7,7 +7,7 @@ from collections import Counter
 import numpy as np
 from PIL import Image
 
-from videotab.strip import (
+from youtab.strip import (
     Staff, StripResult, _background, _grow_band, _largest_group,
     find_peaks, find_staves, line_offset, load_rgb, to_gray,
 )

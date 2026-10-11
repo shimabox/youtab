@@ -7,7 +7,7 @@ import sys
 import pytest
 from PIL import Image
 
-from videotab import pdfpages
+from youtab import pdfpages
 from pdfs import image_pdf, locked_pdf, page_pdf
 
 PNG = io.BytesIO()
@@ -106,7 +106,7 @@ def test_fit_makes_the_long_edge_exact(size, expected):
 
 
 def child(*args):
-    return subprocess.run([sys.executable, "-m", "videotab.pdfpages", *map(str, args)],
+    return subprocess.run([sys.executable, "-m", "youtab.pdfpages", *map(str, args)],
                           capture_output=True, stdin=subprocess.DEVNULL, timeout=60)
 
 
@@ -128,5 +128,5 @@ def test_module_runs_as_a_child_process_and_reports_by_exit_code(tmp_path):
 
 
 def test_importing_the_module_does_not_load_pdfium():
-    code = "import sys, videotab.pdfpages; sys.exit('pypdfium2' in sys.modules)"
+    code = "import sys, youtab.pdfpages; sys.exit('pypdfium2' in sys.modules)"
     assert subprocess.run([sys.executable, "-c", code], capture_output=True, timeout=60).returncode == 0

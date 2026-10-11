@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from videotab.workdir import frame_name
+from youtab.workdir import frame_name
 
 W, H = 640, 360
 BAND = (240, 350)

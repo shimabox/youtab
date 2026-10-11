@@ -11,11 +11,11 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
-from videotab import confine
-from videotab.alphatex import check_bars
-from videotab.build import load_score, merge
-from videotab.timing import schedule
-from videotab.workdir import fmt_time, list_frames, load_meta, read_json, write_json
+from youtab import confine
+from youtab.alphatex import check_bars
+from youtab.build import load_score, merge
+from youtab.timing import schedule
+from youtab.workdir import fmt_time, list_frames, load_meta, read_json, write_json
 
 
 def parse_marks(workdir: Path, cli_marks: list[str]) -> list[tuple[int, float]]:
@@ -72,7 +72,7 @@ def video_length(workdir: Path) -> float | None:
 def run_verify(workdir: Path, marks: list[str] | None = None, tolerance: float = 2.0) -> int:
     merged = merge(workdir)
     if merged.conflicts or merged.missing:
-        print("食い違いか抜けがあります（先に videotab build を通してください）。今ある小節だけで計算します。")
+        print("食い違いか抜けがあります（先に youtab build を通してください）。今ある小節だけで計算します。")
     score = load_score(workdir)
     if not score.get("tempo"):
         raise SystemExit(f"{workdir / 'score.json'} に tempo を書いてください")
