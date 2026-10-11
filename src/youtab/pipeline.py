@@ -29,7 +29,7 @@ from pathlib import Path
 
 from youtab import agent_settings, inside
 from youtab.add import find_video
-from youtab.agent import DEFAULT_ENGINE, ENGINES, youtab_bin
+from youtab.agent import DEFAULT_ENGINE, ENGINES, LOG_LINE_ROOM, clip_line, clip_lines, youtab_bin
 from youtab.cancel import Cancel, Cancelled
 from youtab.strip import NO_TAB_EXIT, PAPER_EXIT, paper_counts, screen_note
 from youtab.workdir import load_meta, read_json, save_meta, write_json
@@ -285,16 +285,22 @@ class Job:
     # --- ログ
 
     def log(self, message: str) -> None:
-        """job.log に 1 行足す。例外は出さない（job.log がリンクなどなら置き換え、書けなければ標準エラー）。"""
+        """job.log に 1 行足す。例外は出さない（job.log がリンクなどなら置き換え、書けなければ標準エラー）。
+
+        長い行は短くして書く（message が何行かあれば、行ごとに）。
+        """
         stamp = f"{datetime.now().strftime('%H:%M:%S')} "
+        message = clip_lines(message, LOG_LINE_ROOM)
         with _file_lock:
             inside.append_line(self.workdir, self.log_path.name, stamp + message, stamp=stamp)
 
     def log_tail(self, lines: int = 200) -> list[str]:
+        """job.log の末尾の lines 行。長い行は短くして返す（上限を付ける前に書かれた行が残っていても、画面へは送らない）。"""
         if not self.log_path.exists():
             return []
         with _file_lock:
-            return self.log_path.read_text(encoding="utf-8").splitlines()[-lines:]
+            tail = self.log_path.read_text(encoding="utf-8").splitlines()[-lines:]
+        return [clip_line(line, 2 * LOG_LINE_ROOM) for line in tail]
 
     # --- 実行
 
