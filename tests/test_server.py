@@ -789,6 +789,30 @@ def test_log_box_is_kept_between_refreshes_so_the_reading_position_stays():
     assert "innerHTML" not in update
 
 
+def test_score_frame_keeps_its_width_whatever_the_details_show():
+    # タブ譜は枠の幅に合わせて組み直す。枠の幅が、詳細の欄の中身や読み込みの前後で変わらないようにする
+    from importlib import resources
+
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    css = page.split("<style>")[1].split("</style>")[0]
+    # 詳細の列は、ログの長い行などに押されて広がらない
+    assert ".layout { display: grid; grid-template-columns: 290px minmax(0, 1fr);" in css
+    assert "@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }" in css
+    assert "1fr 1fr" not in css and "290px 1fr" not in css
+    # 切れ目のない長い行は、ログの欄・報告のコードの中で折り返す
+    assert "overflow-wrap: anywhere;" in css.split("pre.log {")[1].split("}")[0]
+    assert "overflow-wrap: anywhere;" in css.split(".notes .note pre {")[1].split("}")[0]
+    # 読み込み中のパネルは高さだけを消し、左右の余白と枠線（枠の幅を決めるもの）は見せた後と同じにする
+    loading = css.split(".result.loading {")[1].split("}")[0]
+    assert "height: 0;" in loading and "visibility: hidden;" in loading
+    assert "padding-top: 0; padding-bottom: 0;" in loading and "border-top-width: 0; border-bottom-width: 0;" in loading
+    for whole in ("padding: 0", "border: 0", "padding-left", "padding-right", "border-left", "border-right", "width"):
+        assert whole not in loading.replace("border-top-width", "").replace("border-bottom-width", "")
+    # 列が広がらなくなった分、狭い画面で中身がパネルからはみ出さないようにする（やり直しの行の select・長い題名）
+    assert ".actions.retry { flex-direction: column; flex-wrap: nowrap; align-items: stretch;" in css
+    assert ".head h3 { margin: 0; font-size: 1.15rem; flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }" in css
+
+
 def test_source_link_shows_where_it_goes():
     # 「元の動画」のリンクは、押す前に行き先が分かるよう、ホスト名を添える（リンクの文言は固定なので）
     render = page_section("一覧と詳細").split("function renderDetail(")[1].split("\n  }\n")[0]

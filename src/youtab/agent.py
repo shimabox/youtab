@@ -187,6 +187,30 @@ def _launch_dir(engine: str, workdir: Path) -> Path:
     return workdir if engine == "claude" else workdir.resolve().parent
 
 
+LOG_LINE_MAX = 2000  # ログの 1 行に残す文字数
+LOG_LINE_ROOM = 100  # 短くした行に、あとから付く分（省いた旨・担当名・時刻）として見逃す文字数
+
+
+def clip_line(text: str, room: int = 0) -> str:
+    """ログの 1 行を LOG_LINE_MAX 文字までにする。超えた分は捨て、捨てた文字数を末尾に書く。
+
+    エージェントの出力には、画像の Base64 のような数十万文字の行が混ざることがある
+    （JSON として読めなかった stream-json の行や、Codex が実行したコマンドの出力）。
+
+    上限は、エージェントの出力を受け取る所・job.log に書く所・画面へ返す所の順にかける。
+    前の所で短くした行は、省いた旨などが付いて LOG_LINE_MAX を少し超える。あとの所ほど room を
+    大きくして、その行をもう一度短くしない（省いた文字数の表示を変えない）。
+    """
+    if len(text) <= LOG_LINE_MAX + room:
+        return text
+    return f"{text[:LOG_LINE_MAX]}…（残り {len(text) - LOG_LINE_MAX} 文字を省きました）"
+
+
+def clip_lines(text: str, room: int = 0) -> str:
+    """何行かある文を、行ごとに clip_line にかける（長い 1 行のために、ほかの行を捨てない）。"""
+    return "\n".join(clip_line(line, room) for line in text.split("\n"))
+
+
 def _describe_claude_event(line: str) -> tuple[str | None, str | None]:
     """stream-json の 1 行から（ログに出す短い説明, 最後の返答）を取り出す。"""
     try:
@@ -344,7 +368,7 @@ def _run_agent(
                 else:
                     desc = line.rstrip()
                 if desc:
-                    log(f"[{label}] {desc}")
+                    log(f"[{label}] {clip_lines(desc)}")
             proc.wait()
     finally:
         timer.cancel()

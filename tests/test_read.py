@@ -168,6 +168,20 @@ def test_describe_claude_event():
     desc, final = agent._describe_claude_event(line)
     assert final == "1〜8 小節" and "1 件" in desc
 
+
+def test_clip_line_keeps_short_lines_and_says_how_much_was_cut():
+    assert agent.clip_line("a" * agent.LOG_LINE_MAX) == "a" * agent.LOG_LINE_MAX
+    clipped = agent.clip_line("a" * (agent.LOG_LINE_MAX + 300))
+    assert clipped == "a" * agent.LOG_LINE_MAX + "…（残り 300 文字を省きました）"
+    # room は、短くした行にあとから付いた分として見逃す文字数。超えたら、同じ長さまで短くする
+    stamped = "08:32:34 [まとめ役 直し] " + clipped
+    assert len(stamped) > agent.LOG_LINE_MAX and agent.clip_line(stamped, agent.LOG_LINE_ROOM) == stamped
+    over = "a" * (agent.LOG_LINE_MAX + agent.LOG_LINE_ROOM + 1)
+    assert agent.clip_line(over, agent.LOG_LINE_ROOM) == "a" * agent.LOG_LINE_MAX + f"…（残り {agent.LOG_LINE_ROOM + 1} 文字を省きました）"
+    # 何行かある文は行ごとに短くし、短い行はそのまま残す
+    assert agent.clip_lines("x\n" + "a" * (agent.LOG_LINE_MAX + 5) + "\ny") == "x\n" + "a" * agent.LOG_LINE_MAX + "…（残り 5 文字を省きました）\ny"
+
+
 def test_claude_is_confined_and_rules_are_inlined(tmp_path):
     cmd = agent._claude_command("読む", [tmp_path / "parts" / "part_A.json"], tmp_path)
     assert "--restricted" in cmd  # 利用者の設定（auto モードなど）を読まず、ファイル操作を作業フォルダに限る
@@ -373,6 +387,13 @@ if sys.argv[2] == "with-model":
     first["model"] = "claude-opus-5-5"
 print(json.dumps(first))
 print(json.dumps({"type": "system", "model": "claude-sonnet-5"}))  # 2 行目以降は調べない
+if sys.argv[2] == "many-lines":
+    # 何行もあるコマンド（どの行も短いが、合わせると長い）
+    command = "\\n".join(f"echo {i:02d} " + "x" * 130 for i in range(20))
+    print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": command}}]}}))
+if sys.argv[2] == "long-line":
+    # 画像を読んだ結果の行の途中に、ほかの出力が割り込んだ形（JSON として読めない長い行）
+    print('{"type":"user","message":{"content":[{"type":"image","data":"' + "A" * 300000 + "tee: stdout: error")
 print(json.dumps({"type": "result", "subtype": "success", "result": "おわり"}))
 """
 
@@ -421,6 +442,33 @@ def test_run_agent_without_model_in_first_event(tmp_path, monkeypatch):
                              settings=CLAUDE_SETTINGS, on_actual=actual.append)  # fmt: skip
     assert result.ok
     assert not any("実際のモデル" in x for x in logs) and actual == []
+
+
+def test_run_agent_does_not_log_huge_lines_as_they_are(tmp_path, monkeypatch):
+    # JSON として読めない行はそのままログに出す。数十万文字の行は、頭だけを残す
+    install_fake_claude(tmp_path, monkeypatch, "long-line")
+    wd = tmp_path / "wd"
+    wd.mkdir()
+    logs = []
+    result = agent.run_agent("読む", engine="claude", workdir=wd, writable=[], log=logs.append, label="A")
+    assert result.ok and result.text == "おわり"
+    broken = [x for x in logs if '"type":"user"' in x]
+    assert len(broken) == 1 and broken[0].startswith('[A] {"type":"user"')
+    assert broken[0].endswith("文字を省きました）") and len(broken[0]) < agent.LOG_LINE_MAX + 100
+    assert max(len(x) for x in logs) < agent.LOG_LINE_MAX + 100
+
+
+def test_run_agent_keeps_every_line_of_a_long_command(tmp_path, monkeypatch):
+    # 上限は行ごとにかける。どの行も短いコマンドは、合わせて上限を超えても、後ろの行を捨てない
+    install_fake_claude(tmp_path, monkeypatch, "many-lines")
+    wd = tmp_path / "wd"
+    wd.mkdir()
+    logs = []
+    assert agent.run_agent("読む", engine="claude", workdir=wd, writable=[], log=logs.append, label="A").ok
+    command = [x for x in logs if x.startswith("[A] Bash echo 00 ")]
+    assert len(command) == 1 and len(command[0]) > agent.LOG_LINE_MAX
+    lines = command[0].split("\n")
+    assert len(lines) == 20 and lines[-1] == "echo 19 " + "x" * 130 and "省きました" not in command[0]
 
 
 def test_run_agent_confines_reader_to_resolved_workdir(tmp_path, monkeypatch):

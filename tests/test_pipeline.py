@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 
 import numpy as np
 import pytest
@@ -55,6 +56,68 @@ def test_job_json_has_no_link(tmp_path):
     data = pipeline.Job.create(wd).load()
     assert "url" not in data and "source_url" not in data
     assert data["title"] == "曲" and data["steps"][0]["name"] == "add"
+
+
+def test_log_tail_shortens_long_lines_already_in_the_log(tmp_path):
+    # 上限を付ける前に書かれた長い行が job.log に残っていても、画面へは短くして返す（ファイルは書き換えない）
+    wd = tmp_path / "work" / "clip-1a2b3c"
+    wd.mkdir(parents=True)
+    (wd / "meta.json").write_text(json.dumps({"id": wd.name, "title": "曲"}))
+    job = pipeline.Job.create(wd)
+    long_line = "08:32:34 [A] " + "A" * 300000
+    before = "08:32:33 [A] Read p001_a.png\n" + long_line + "\n08:32:35 [A] 終了 success\n"
+    job.log_path.write_text(before, encoding="utf-8")
+    tail = job.log_tail(300)
+    assert tail[0] == "08:32:33 [A] Read p001_a.png" and tail[2] == "08:32:35 [A] 終了 success"
+    assert tail[1].startswith("08:32:34 [A] AAAA") and tail[1].endswith("文字を省きました）")
+    assert len(tail[1]) < 2100
+    assert job.log_path.read_text(encoding="utf-8") == before
+
+
+def test_log_writes_long_lines_shortened_and_shows_them_as_written(tmp_path, monkeypatch):
+    # job.log に書く行は、どこから来ても（エージェントの出力・youtab の知らせ・コマンドの出力）短くする
+    wd = tmp_path / "work" / "clip-1a2b3c"
+    wd.mkdir(parents=True)
+    (wd / "meta.json").write_text(json.dumps({"id": wd.name, "title": "曲"}))
+    job = pipeline.Job.create(wd)
+    job.log("抜けている小節: " + "、".join(str(n) for n in range(2, 1200)))
+    job.log("Traceback (most recent call last):\n  File x\n" + "B" * 5000 + "\nValueError: y")
+    script = tmp_path / "youtab_cmd"
+    script.write_text(f"#!{sys.executable}\nprint('C' * 300000)\nprint('おわり')\n", encoding="utf-8")
+    script.chmod(0o755)
+    monkeypatch.setattr(pipeline, "youtab_bin", lambda: str(script))
+    job._cli("build")
+    written = job.log_path.read_text(encoding="utf-8").split("\n")
+    assert max(len(line) for line in written) < 2100
+    clipped = [line for line in written if line.endswith("文字を省きました）")]
+    assert len(clipped) == 3 and clipped[0][9:].startswith("抜けている小節: 2、3、4、")
+    assert clipped[1].startswith("BBBB") and clipped[2][9:].startswith("CCCC")
+    # 何行かある知らせは、行ごとに短くする（長い 1 行のために、ほかの行を捨てない）
+    assert "  File x" in written and "ValueError: y" in written and written[-2].endswith(" おわり")
+    # 画面へは、書いたとおりに返す（短くした行を、もう一度短くしない）
+    assert job.log_tail(300) == written[:-1]
+
+
+@pytest.mark.parametrize("fake_note", [False, True])
+def test_log_shows_lines_as_written_at_every_length(tmp_path, fake_note):
+    # エージェントの出力 → job.log → 画面 の順に上限をかけても、書いた行と画面に出す行は同じで、
+    # 省いた文字数は最初に短くしたときのまま（末尾が省いた旨と同じ形の出力でも変わらない）
+    from youtab.agent import LOG_LINE_MAX, clip_lines
+
+    wd = tmp_path / "work" / "clip-1a2b3c"
+    wd.mkdir(parents=True)
+    (wd / "meta.json").write_text(json.dumps({"id": wd.name, "title": "曲"}))
+    job = pipeline.Job.create(wd)
+    tail = "…（残り 300 文字を省きました）" if fake_note else ""
+    sizes = [1990, 2000, 2001, 2050, 2075, 2093, 2100, 2101, 2150, 2199, 2200, 2201, 5000, 300000]
+    descs = ["A" * (n - len(tail)) + tail for n in sizes]
+    for desc in descs:
+        job.log(f"[まとめ役 直し] {clip_lines(desc)}")
+    written = job.log_path.read_text(encoding="utf-8").splitlines()
+    assert len(written) == len(sizes) and job.log_tail(300) == written
+    for n, desc, line in zip(sizes, descs, written):
+        note = f"…（残り {n - LOG_LINE_MAX} 文字を省きました）" if n > LOG_LINE_MAX else ""
+        assert line[len("08:32:34 ") :] == f"[まとめ役 直し] {desc[:LOG_LINE_MAX]}{note}"
 
 
 def test_finished_at_is_latest_step_end_of_finished_job():
