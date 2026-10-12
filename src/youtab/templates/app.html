@@ -151,6 +151,25 @@
   .list li button:hover { background: var(--bg); }
   .list li button[aria-current=true] { background: var(--accent-soft); }
   .list .t { display: block; font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .list mark { background: none; color: var(--accent); font-weight: 700; }  /* 絞り込みの語に当たった所 */
+  .list-head { display: flex; justify-content: space-between; align-items: baseline; padding-right: 14px; }
+  #jobs-count { font-size: 0.76rem; color: var(--muted); }
+  /* 曲の絞り込みの欄。虫眼鏡・入力欄・消すボタン（入力があるときだけ）を 1 つの枠に並べる */
+  .find {
+    display: flex; align-items: center; gap: 8px; height: 34px; margin: 0 10px 10px; padding: 0 4px 0 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--muted);
+  }
+  .find:focus-within { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .find svg { flex: none; }
+  .find input { all: unset; flex: 1; min-width: 0; height: 100%; font-size: 0.85rem; color: var(--ink); cursor: text; }
+  .find input::placeholder { color: var(--muted); }
+  .find button {
+    all: unset; box-sizing: border-box; flex: none; width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .find button[hidden] { display: none; }
+  .find button:hover { background: var(--panel); color: var(--ink); }
+  .find button:focus-visible { outline: 2px solid var(--accent); }
   .list .s { display: flex; gap: 8px; align-items: center; font-size: 0.76rem; color: var(--muted); }
   .empty { color: var(--muted); padding: 14px; font-size: 0.88rem; }
 
@@ -340,7 +359,12 @@
 
   <div class="layout">
     <section class="list" aria-label="曲の一覧">
-      <h2>曲</h2>
+      <div class="list-head"><h2>曲</h2><span id="jobs-count"></span></div>
+      <div class="find">
+        <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input id="find" type="text" aria-label="曲を絞り込む" placeholder="題名で絞り込む" autocomplete="off" spellcheck="false">
+        <button type="button" id="find-clear" aria-label="絞り込みを消す" title="絞り込みを消す" hidden><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
       <ul id="jobs"></ul>
     </section>
     <section id="detail"><div class="panel"><p class="welcome">動画か楽譜のファイルを選ぶかドロップして「タブ譜を作る」を押すと、ここに進み具合が出ます。</p></div></section>
@@ -960,13 +984,53 @@
     }
   }
 
+  var listJobs = [];  // 最後に受け取った曲の一覧（絞り込みの欄を打つたびに、ここから描き直す）
+
+  // 絞り込みで比べる形。全角と半角、大文字と小文字、濁点の持ち方（合成済みか別の文字か）を区別しない
+  function fold(s) { return String(s || "").normalize("NFKC").toLowerCase(); }
+  function findTerms() { return fold($("find").value).split(/\s+/).filter(Boolean); }
+  // 題名に、すべての語がある曲か
+  function matches(j, terms) {
+    var hay = fold(j.title);
+    return terms.every(function (t) { return hay.indexOf(t) >= 0; });
+  }
+  // text のうち語に当たる所を mark にした、要素の子の並び。fold した文字が text のどこから来たかを
+  // 文字（と、それに付く濁点などの結合文字）ごとに覚えておき、当たった範囲を元の位置に戻す
+  function marked(text, terms) {
+    if (!terms.length) return [text];
+    var folded = "", from = [], to = [], hit = [], re = /\P{M}\p{M}*|\p{M}+/gu, m;
+    while ((m = re.exec(text))) {
+      var f = fold(m[0]);
+      for (var n = 0; n < f.length; n++) { from.push(m.index); to.push(m.index + m[0].length); }
+      folded += f;
+    }
+    terms.forEach(function (t) {
+      for (var at = folded.indexOf(t); at >= 0; at = folded.indexOf(t, at + t.length)) {
+        for (var k = from[at]; k < to[at + t.length - 1]; k++) hit[k] = true;
+      }
+    });
+    var out = [], i = 0;
+    while (i < text.length) {
+      var j = i + 1;
+      while (j < text.length && !hit[j] === !hit[i]) j++;
+      out.push(hit[i] ? el("mark", { text: text.slice(i, j) }) : text.slice(i, j));
+      i = j;
+    }
+    return out;
+  }
+
   function renderList(jobs) {
-    var ul = $("jobs");
+    listJobs = jobs;
+    var ul = $("jobs"), terms = findTerms();
+    var shown = terms.length ? jobs.filter(function (j) { return matches(j, terms); }) : jobs;
+    $("find-clear").hidden = !$("find").value;
+    $("jobs-count").textContent = jobs.length ? (terms.length ? shown.length + " / " : "") + jobs.length + " 曲" : "";
     ul.textContent = "";
     if (!jobs.length) { ul.appendChild(el("li", { class: "empty", text: "まだありません" })); return; }
-    jobs.forEach(function (j) {
+    if (!shown.length) { ul.appendChild(el("li", { class: "empty", text: "当てはまる曲がありません" })); return; }
+    shown.forEach(function (j) {
       var b = el("button", { type: "button", "aria-current": String(j.id === selected), onclick: function () { select(j.id); } }, [
-        el("span", { class: "t", text: j.title, title: j.title }),
+        el("span", { class: "t", title: j.title }, marked(j.title, terms)),
         el("span", { class: "s" }, [pill(j.status), when(j.updated)])
       ]);
       ul.appendChild(el("li", {}, [b]));
@@ -1578,6 +1642,14 @@
     $("upload").hidden = false;
     xhr.send(file);
   });
+
+  // 曲の絞り込み: 打つたびに一覧を描き直す。Esc と消すボタンで空に戻す
+  function clearFind() { $("find").value = ""; renderList(listJobs); }
+  $("find").addEventListener("input", function () { renderList(listJobs); });
+  $("find").addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && !ev.isComposing && $("find").value) clearFind();  // 変換の取り消しの Esc では消さない
+  });
+  $("find-clear").addEventListener("click", function () { clearFind(); $("find").focus(); });
 
   refresh();
 })();
