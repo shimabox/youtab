@@ -100,8 +100,8 @@ def test_read_step_without_env_has_no_note(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("engine, raw", [
-    ("claude", {"effort": "minimal"}),  # エンジンに合わない
-    ("codex", {"effort": "max"}),
+    ("claude", {"effort": "minimal"}),  # 選択肢に無い
+    ("codex", {"effort": "minimal"}),
     ("claude", {"model": "bad model"}),
     ("claude", {"model": "-x"}),
     ("claude", {"model": 5}),
