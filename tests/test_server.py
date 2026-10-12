@@ -759,6 +759,28 @@ def test_result_iframe_is_sandboxed_like_files():
     assert frames[0].index("sandbox:") < frames[0].index("src:")  # src より先に付ける
 
 
+def test_list_can_be_narrowed_by_words():
+    from importlib import resources
+
+    page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
+    assert '<input id="find" type="text" aria-label="曲を絞り込む"' in page
+    assert '<button type="button" id="find-clear" aria-label="絞り込みを消す" title="絞り込みを消す" hidden>' in page
+    assert ".find button[hidden] { display: none; }" in page  # all: unset で hidden が効かなくなるのを防ぐ
+    section = page_section("一覧と詳細")
+    # 題名を、全角と半角・大文字と小文字を区別せずに比べる
+    assert "var hay = fold(j.title);" in section
+    assert 'normalize("NFKC").toLowerCase()' in section
+    render = section.split("function renderList(")[1].split("\n  }\n")[0]
+    assert "jobs.filter(function (j) { return matches(j, terms); })" in render
+    assert "marked(j.title, terms)" in render
+    assert 'shown.length + " / "' in render and "当てはまる曲がありません" in render
+    # 題名などは文字として入れる（当たった所の mark も、文字から作る）
+    assert "innerHTML" not in render and "innerHTML" not in section.split("function marked(")[1].split("\n  }\n")[0]
+    assert 'el("mark", { text: text.slice(i, j) })' in section
+    # 打つたびに、最後に受け取った一覧から描き直す（サーバーには問い合わせない）
+    assert '$("find").addEventListener("input", function () { renderList(listJobs); });' in page
+
+
 def test_switching_songs_keeps_previous_view_until_new_one_is_ready():
     section = page_section("一覧と詳細")
     select = section.split("function select(")[1]
