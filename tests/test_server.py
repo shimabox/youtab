@@ -1096,11 +1096,11 @@ def test_picker_explains_model_and_effort_and_sends_effort_values_unchanged():
     from importlib import resources
 
     section = page_section("読み取りのモデルと推論の強さ")
-    # 推論の強さの選択肢は、送る値（英語）のまま、表示にだけ日本語の強弱を添える
-    assert 'el("option", { value: v, text: effortText(v) })' in section
+    # 推論の強さの選択肢は、送る値（英語）をそのまま見せる
+    assert 'el("option", { value: v, text: v })' in section
     assert "title: MODEL_HELP" in section and "title: EFFORT_HELP" in section
     page = resources.files("youtab").joinpath("templates", "app.html").read_text(encoding="utf-8")
-    assert 'minimal: "最も弱い"' in page and 'max: "最も強い"' in page
+    assert "EFFORT_NAMES" not in page and "effortText" not in page
     # 通信の失敗は、ブラウザの英語の原文を括弧に回し、日本語の説明と次の操作を先に出す
     assert "サーバーに届きません" not in page
     assert 'function errorText(e) { return e.status ? e.message : OFFLINE + "（" + e.message + "）"; }' in page

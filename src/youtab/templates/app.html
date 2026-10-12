@@ -371,8 +371,6 @@
   var ENGINE_HELP = "タブ譜の画像を読み取る AI。この Mac に入れてログインしてある Claude Code か Codex を使います";
   var MODEL_HELP = "読み取りに使う AI のモデル（AI の種類）。「普段の設定」は、Claude Code / Codex で自分が使っているモデルです";
   var EFFORT_HELP = "AI がどれだけ時間をかけて考えるか。強いほど丁寧になりやすいが、遅く、利用枠も多く使います";
-  // 推論の強さの値に添える日本語の強弱（表示だけ。送る値は英語のまま）
-  var EFFORT_NAMES = { minimal: "最も弱い", low: "弱い", medium: "中くらい", high: "強い", xhigh: "とても強い", max: "最も強い" };
   // 段の名前に添える、何をする段かの説明（段の一覧と「どの段から」の title）。キーは段の表示名
   var STEP_HELP = {
     "動画の取り込み": "選んだ動画を youtab のフォルダに取り込みます",
@@ -425,7 +423,6 @@
     (children || []).forEach(function (c) { if (c) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
     return e;
   }
-  function effortText(v) { return EFFORT_NAMES[v] ? v + "（" + EFFORT_NAMES[v] + "）" : v; }
   // 段の説明を title に付ける
   function withHelp(e, label) {
     if (STEP_HELP[label]) e.title = STEP_HELP[label];
@@ -561,7 +558,7 @@
       var o = engineOptions(engine), u = o.usual || {};
       model.options[0].textContent = "普段の設定（" + (u.model || "—") + "）";
       var eu = engine === "claude" && model.value !== "" ? u.effort_with_model : u.effort;
-      effort.options[0].textContent = "普段の設定（" + (EFFORT_NAMES[eu] ? eu + "・" + EFFORT_NAMES[eu] : eu || "—") + "）";
+      effort.options[0].textContent = "普段の設定（" + (eu || "—") + "）";
       var list = remembered(engine).names;
       if (o.model_hint && list.indexOf(o.model_hint) < 0) list = list.concat([o.model_hint]);
       var sig = list.join("\n");
@@ -580,7 +577,7 @@
       model.appendChild(el("option", { value: OTHER, text: "その他（入力）" }));
       effort.textContent = "";
       effort.appendChild(el("option", { value: "" }));
-      engineOptions(engine).efforts.forEach(function (v) { effort.appendChild(el("option", { value: v, text: effortText(v) })); });
+      engineOptions(engine).efforts.forEach(function (v) { effort.appendChild(el("option", { value: v, text: v })); });
       model.value = st.sel;
       if (model.selectedIndex < 0) model.value = "";
       custom.value = st.sel === OTHER ? st.text : "";
@@ -1219,7 +1216,7 @@
 
   function choiceText(d) {
     var c = d.choice || {};
-    return (c.model ? "・モデル " + c.model : "") + (c.effort ? "・推論の強さ " + effortText(c.effort) : "");
+    return (c.model ? "・モデル " + c.model : "") + (c.effort ? "・推論の強さ " + c.effort : "");
   }
 
   // old の k 行目から後ろが lines の頭と同じになる、いちばん小さい k（頭から外れた行の数）。
