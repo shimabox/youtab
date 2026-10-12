@@ -18,7 +18,7 @@
 | AI | モデル | 推論の強さ |
 |---|---|---|
 | Claude Code | 普段の設定 / `opus` / `sonnet` / `fable` / `haiku` / その他（入力） | 普段の設定 / `low` / `medium` / `high` / `xhigh` / `max` |
-| Codex | 普段の設定 / その他（入力） | 普段の設定 / `minimal` / `low` / `medium` / `high` / `xhigh` |
+| Codex | 普段の設定 / その他（入力） | 普段の設定 / `low` / `medium` / `high` / `xhigh` / `max` |
 
 - Claude Code の `opus` などは、Claude Code が受け付ける短い呼び名です。常にその種類の最新のモデルを指すので、選択肢が古くなりません。正式なモデル名（`claude-opus-5-5` など）は「その他」に入れます。
 - Codex には最新のモデルを指す呼び名が無く、決まった選択肢はすぐ古くなります。そのため、モデルは「その他」に名前を入れます。入力欄の候補には、普段の設定のモデルも出ます。

@@ -57,9 +57,9 @@ def test_models_accepted():
 def test_efforts_follow_engine():
     for v in ("low", "medium", "high", "xhigh", "max"):
         assert s.normalize_choice("claude", None, v).effort == v
-    for v in ("minimal", "low", "medium", "high", "xhigh"):
+    for v in ("low", "medium", "high", "xhigh", "max"):
         assert s.normalize_choice("codex", None, v).effort == v
-    for engine, v in (("claude", "minimal"), ("codex", "max"), ("claude", "High"), ("codex", "ultra"),
+    for engine, v in (("claude", "minimal"), ("codex", "minimal"), ("claude", "High"), ("codex", "ultra"),
                       ("claude", ""), ("codex", " "), ("claude", 3), ("codex", ["high"]), ("codex", 'high"')):  # fmt: skip
         with pytest.raises(ValueError):
             s.normalize_choice(engine, None, v)
@@ -90,7 +90,7 @@ def test_choice_from_job_and_shown_choice():
             s.choice_from_job("claude", raw)
     assert s.shown_choice("claude", None) == {"model": None, "effort": None}
     assert s.shown_choice("claude", {"model": "opus", "effort": "minimal"}) == {"model": "opus", "effort": None}
-    assert s.shown_choice("codex", {"model": "gpt-6-astra", "effort": "max"}) == {"model": "gpt-6-astra", "effort": None}
+    assert s.shown_choice("codex", {"model": "gpt-6-astra", "effort": "minimal"}) == {"model": "gpt-6-astra", "effort": None}
     assert s.shown_choice("codex", "broken") == {"model": None, "effort": None}
 
 
@@ -102,10 +102,10 @@ def test_apply_choice_and_validate():
     assert s.apply_choice(USUAL_CLAUDE, None) is USUAL_CLAUDE
     assert s.apply_choice(USUAL_CLAUDE, Choice()) == USUAL_CLAUDE
     with pytest.raises(ValueError):
-        s.apply_choice(USUAL_CODEX, Choice(None, "max"))  # Codex に max は無い
+        s.apply_choice(USUAL_CODEX, Choice(None, "minimal"))  # Codex の選択肢に minimal は無い
     bad = [
         (AgentSettings("claude", chosen_effort="minimal"), "claude"),
-        (AgentSettings("codex", chosen_effort="max"), "codex"),
+        (AgentSettings("codex", chosen_effort="minimal"), "codex"),
         (AgentSettings("claude", chosen_model="-x"), "claude"),
         (AgentSettings("codex", chosen_model="a b"), "codex"),
     ]
@@ -148,8 +148,8 @@ def test_claude_both_chosen_drops_settings():
 def test_codex_fills_unchosen_item_from_usual():
     assert s.codex_args(s.apply_choice(USUAL_CODEX, Choice("gpt-7", None))) == [
         "-m", "gpt-7", "-c", 'model_reasoning_effort="high"']  # fmt: skip
-    assert s.codex_args(s.apply_choice(USUAL_CODEX, Choice(None, "minimal"))) == [
-        "-m", "gpt-6-astra", "-c", 'model_reasoning_effort="minimal"']  # fmt: skip
+    assert s.codex_args(s.apply_choice(USUAL_CODEX, Choice(None, "max"))) == [
+        "-m", "gpt-6-astra", "-c", 'model_reasoning_effort="max"']  # fmt: skip
     assert s.codex_args(s.apply_choice(AgentSettings("codex"), Choice(None, "xhigh"))) == [
         "-c", 'model_reasoning_effort="xhigh"']  # fmt: skip
     assert s.removed_env(s.apply_choice(USUAL_CODEX, Choice(None, "low"))) == ()
@@ -218,7 +218,7 @@ def test_agent_options_show_only_checked_values(tmp_path, monkeypatch):
         "codex": {
             "models": None,
             "model_hint": "gpt-6-astra",
-            "efforts": ["minimal", "low", "medium", "high", "xhigh"],
+            "efforts": ["low", "medium", "high", "xhigh", "max"],
             "usual": {"model": "gpt-6-astra", "effort": "high"},
         },
     }
@@ -351,7 +351,7 @@ def test_run_agent_rejects_bad_choice_before_start(tmp_path, monkeypatch):
     monkeypatch.setattr(agent.shutil, "which", must_not_look)
     for engine, settings in (
         ("claude", AgentSettings("claude", chosen_effort="minimal")),
-        ("codex", AgentSettings("codex", chosen_effort="max")),
+        ("codex", AgentSettings("codex", chosen_effort="minimal")),
         ("claude", AgentSettings("claude", chosen_model="--dangerously-skip-permissions")),
         ("codex", AgentSettings("codex", chosen_model='x" y')),
     ):

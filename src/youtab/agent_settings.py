@@ -41,7 +41,9 @@ MAX_MODEL_SETTINGS = 64  # 引数の長さを抑えるための上限
 CHOICE_MODELS: dict[str, tuple[str, ...] | None] = {"claude": ("opus", "sonnet", "fable", "haiku"), "codex": None}
 CHOICE_EFFORTS = {
     "claude": ("low", "medium", "high", "xhigh", "max"),  # --effort で受け付けられる値
-    "codex": ("minimal", "low", "medium", "high", "xhigh"),
+    # Codex のモデルの一覧に出るどのモデルも対応している値（minimal に対応するモデルは一覧に無く、
+    # ultra は対応しないモデルがある）
+    "codex": ("low", "medium", "high", "xhigh", "max"),
 }
 CLAUDE_EFFORT_ENV = "CLAUDE_CODE_EFFORT_LEVEL"
 

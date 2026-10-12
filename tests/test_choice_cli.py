@@ -61,15 +61,15 @@ def test_new_song_without_flags_matches_old_shape(tmp_path, runs):
 
 
 def test_new_song_with_flags(tmp_path, runs):
-    assert run(tmp_path, video(tmp_path), "--engine", "codex", "--model", "gpt-7", "--effort", "minimal") == 0
-    assert (runs[0]["engine"], runs[0]["choice"]) == ("codex", {"model": "gpt-7", "effort": "minimal"})
+    assert run(tmp_path, video(tmp_path), "--engine", "codex", "--model", "gpt-7", "--effort", "max") == 0
+    assert (runs[0]["engine"], runs[0]["choice"]) == ("codex", {"model": "gpt-7", "effort": "max"})
     assert run(tmp_path, video(tmp_path, "second"), "--model", "opus") == 0
     assert (runs[1]["engine"], runs[1]["choice"]) == ("claude", {"model": "opus"})
 
 
 @pytest.mark.parametrize("flags", [
     ["--effort", "minimal"],  # Claude Code に無い
-    ["--engine", "codex", "--effort", "max"],  # Codex に無い
+    ["--engine", "codex", "--effort", "minimal"],  # Codex に無い
     ["--model", "a b"],
     ["--model", "-x"],
     ["--model", 'a"b'],

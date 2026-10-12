@@ -91,7 +91,7 @@ def test_submit_without_choice_matches_old_shape(app_server):
 
 @pytest.mark.parametrize("query", [
     {"engine": "claude", "effort": "minimal"},
-    {"engine": "codex", "effort": "max"},
+    {"engine": "codex", "effort": "minimal"},
     {"engine": "claude", "model": "a b"},
     {"engine": "claude", "model": "-opus"},
     {"engine": "codex", "model": 'gpt"x'},
@@ -132,7 +132,7 @@ def test_retry_rules(app_server, body, expected_engine, expected):
 
 @pytest.mark.parametrize("body", [
     {"effort": "minimal"},  # Claude Code に無い
-    {"engine": "codex", "effort": "max"},  # 新しいエンジンで検査する
+    {"engine": "codex", "effort": "minimal"},  # Codex にも無い
     {"model": " "},
     {"model": "--x"},
     {"model": 3},
@@ -155,7 +155,7 @@ def test_detail_hides_values_that_fail_checks(app_server):
     job.save(data)
     detail = json.loads(call(base + f"/api/jobs/{JOB}")[1])
     assert detail["choice"] == {"model": None, "effort": "max"}
-    data["engine"] = "codex"  # Codex に max は無い
+    data["engine"], data["choice"]["effort"] = "codex", "minimal"  # Codex の選択肢に無い
     job.save(data)
     assert json.loads(call(base + f"/api/jobs/{JOB}")[1])["choice"] == {"model": None, "effort": None}
 
