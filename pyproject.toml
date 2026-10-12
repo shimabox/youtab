@@ -1,6 +1,6 @@
 [project]
 name = "youtab"
-version = "0.2.3"
+version = "0.3.0"
 description = "手元の動画ファイルから、画面に写るタブ譜を alphaTab の HTML＋alphaTex に書き起こす"
 readme = "README.md"
 license = "MIT"
