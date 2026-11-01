@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from youtab import build, verify
+from youtab import build, render, verify
 from youtab.render import favicon_svg, render_html, tuning_label
 from youtab.workdir import frame_name, parse_frame_name
 
@@ -33,7 +33,8 @@ def test_build_merges_overlap_and_writes_outputs(tmp_path, capsys):
     assert "https://example.com/v" in html and "小節数: 3" in html
     # 同梱の alphaTab（MPL-2.0）のライセンスと、同じ版のソースの入手先を示す
     assert "https://mozilla.org/MPL/2.0/" in html
-    assert "https://github.com/CoderLine/alphaTab/tree/v1.8.4" in html
+    assert f"https://github.com/CoderLine/alphaTab/tree/v{render.ALPHATAB_VERSION}" in html
+    assert f"@coderline/alphatab@{render.ALPHATAB_VERSION}/dist/soundfont/" in html
 
 
 def test_build_moves_note_effects_after_beats_into_notes(tmp_path, capsys):
@@ -521,6 +522,24 @@ def test_rendered_page_tells_score_load_failure_from_offline():
     # 楽譜を読めなかったら、あとで音源が届いても ▶ を押せるようにしない
     ready = html.split("api.playerReady.on(function () {")[1].split("});")[0]
     assert ready.lstrip().startswith("if (scoreFailed) { return; }")
+
+
+def test_rendered_page_shows_bar_numbers_on_every_bar():
+    # 小節番号は全小節に出す。楽譜を読み込んだあと・描く前（scoreLoaded）に、4 種類の譜表の設定を
+    # すべて変える。非推奨の stylesheet.barNumberDisplay は使わず、.alphatex にも書かない。
+    tex = "r.1 |\nr.1\n"
+    html = render_html(tex, title="t", tempo=100, tuning="e4 b3 g3 d3 a2 e2")
+    script = html.split('id="tm-alphatab-lib"')[1].split("</script>")[1]
+    handler = script.split("api.scoreLoaded.on(function (score) {")[1].split("});")[0]
+    assert "var allBars = alphaTab.model.BarNumberDisplay.AllBars;" in handler
+    for config in ("scoreConfig", "tabConfig", "slashConfig", "numberedConfig"):
+        assert f"sheet.{config}.barNumber = allBars;" in handler
+    assert "barNumberDisplay" not in script
+    # 描く前に設定が入るよう、楽譜を渡すより前に登録する
+    assert script.index("api.scoreLoaded.on(function (score) {") < script.index("api.tex(texSource);")
+    # 埋め込む alphaTex（ダウンロードする .alphatex の元）は変えない
+    assert f"var texSource = {json.dumps(tex)};" in script
+    assert "defaultBarNumberDisplay" not in html.split('id="tm-alphatab-lib"')[0] + script
 
 
 def test_rendered_page_lays_controls_in_two_rows():
