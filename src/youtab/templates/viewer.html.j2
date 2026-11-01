@@ -444,6 +444,19 @@
   api.scoreLoaded.on(function () {
     scoreLoaded = true;
   });
+
+  // 小節番号は全小節に出す（読み取り結果と時刻の照合は小節番号で管理するため）。alphaTab の
+  // 既定は各段の最初の小節だけ。scoreLoaded は楽譜を読み込んだあと、描く前（worker を使うときは
+  // 楽譜を worker へ渡す前）に呼ばれるので、ここで変えれば worker の有無にかかわらず最初の描画に
+  // 効き、描き直しも起きない。.alphatex には書かない（ダウンロードする .alphatex も変えない）。
+  api.scoreLoaded.on(function (score) {
+    var allBars = alphaTab.model.BarNumberDisplay.AllBars;
+    var sheet = (score || api.score).stylesheet;
+    sheet.scoreConfig.barNumber = allBars;
+    sheet.tabConfig.barNumber = allBars;
+    sheet.slashConfig.barNumber = allBars;
+    sheet.numberedConfig.barNumber = allBars;
+  });
   api.error.on(function (err) {
     var formatError = alphaTab.importer && alphaTab.importer.UnsupportedFormatError &&
       err instanceof alphaTab.importer.UnsupportedFormatError;

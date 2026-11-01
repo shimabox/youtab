@@ -77,10 +77,6 @@ uv run youtab run 動画.mp4      # または: make run VIDEO=動画.mp4
 | [安全のしくみ](docs/safety.md) | 読み取りの AI に許していること・止めていること、ほかのファイルを書き換えないしくみ、アップロードと動画の扱い |
 | [AGENTS.md](AGENTS.md) | 画像の読み方の決まり（読み取りの AI が従う手順書）と、youtab を変更するときの決まり |
 
-## 既知の問題
-
-- **五線のスライド・ハンマリングの弧が消えることがある**: 2 音の和音にスライド（`{sl}`）やハンマリング（`{h}`）が付き、そのあとに音符が詰まって続く所では、楽譜の幅が狭いと五線の弧（スラー）が描かれないことがあります（タブ譜の弧は描かれます）。楽譜を描く部品 alphaTab（1.8.4）の不具合で、[alphaTab に報告済み](https://github.com/CoderLine/alphaTab/issues/2904)です。直った版が出たら差し替えます。それまでは、広い画面で開くと起きにくくなります（ブラウザの開発者ツールには `<path> attribute d: Expected number` のエラーが出ます）。
-
 ## 免責事項
 
 - **正確さ**: 書き起こしは画像処理と AI（Claude Code / Codex）による自動のもので、誤りが含まれることがあります。正確さは保証しません。元の動画と照らして確かめてから使ってください。
@@ -102,5 +98,5 @@ youtab は [MIT License](LICENSE) です。
 
 同梱しているものは、それぞれのライセンスに従います（出どころは [src/youtab/templates/vendor/VENDOR.md](src/youtab/templates/vendor/VENDOR.md)）。
 
-- [alphaTab](https://www.alphatab.net/) 1.8.4: MPL-2.0
+- [alphaTab](https://www.alphatab.net/) 1.9.0: MPL-2.0
 - Bravura フォント: SIL Open Font License 1.1（[Bravura-OFL.txt](src/youtab/templates/vendor/Bravura-OFL.txt)）

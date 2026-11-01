@@ -16,7 +16,7 @@ from importlib import resources
 from jinja2 import Environment, PackageLoader, select_autoescape
 
 # templates/vendor/VENDOR.md と合わせる
-ALPHATAB_VERSION = "1.8.4"
+ALPHATAB_VERSION = "1.9.0"
 SOUNDFONT_URL = f"https://cdn.jsdelivr.net/npm/@coderline/alphatab@{ALPHATAB_VERSION}/dist/soundfont/sonivox.sf3"
 
 _env = Environment(loader=PackageLoader("youtab", "templates"), autoescape=select_autoescape(("html", "j2")))

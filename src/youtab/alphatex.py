@@ -18,7 +18,7 @@ import re
 from dataclasses import dataclass, field
 from fractions import Fraction
 
-# 効果の引数の決まり。同梱の alphaTab 1.8.4（templates/vendor/alphatab.min.js）の static beatProperties /
+# 効果の引数の決まり。同梱の alphaTab 1.9.0（templates/vendor/alphatab.min.js）の static beatProperties /
 # noteProperties の表を写したもの（tests/test_alphatex.py で表と同じことを確かめる）。
 # 名前 → None（引数なし）か、書き方の候補の並び。候補は引数の並びで、引数は（型, 読み方, 許す値）。
 # 型は n が数字、s が文字列、i が識別子（引用符のない単語）。許す値は文字列と識別子にだけ効く。
@@ -86,15 +86,17 @@ BEAT_EFFECT_ARGS: dict[str, Signatures] = {
     "bank": _NUMBER,
     "fermata": [[("is", REQUIRED, ("short", "medium", "long")), ("n", OPTIONAL_FLOAT, None)]],
     "beam": [[("is", REQUIRED, ("invert", "up", "down", "auto", "split", "merge", "splitsecondary"))]],
+    "restdisplaypitch": [[("i", REQUIRED, None)]],
 }
 NOTE_EFFECT_ARGS: dict[str, Signatures] = {
     "nh": None,
-    **dict.fromkeys(["ah", "th", "ph", "sh", "fh"], _OPTIONAL_NUMBER),
+    **dict.fromkeys(["ah", "th", "ph", "sh", "fh"], [[("n", OPTIONAL_FLOAT, None)]]),
     **dict.fromkeys(
         ["v", "vw", "sl", "ss", "sib", "sia", "sou", "sod", "psu", "psd", "h", "lht", "g", "ac", "hac", "ten"]
     ),
     "tr": [[("n", REQUIRED, None), ("n", OPTIONAL, ("16", "32", "64"))]],
-    **dict.fromkeys(["pm", "st", "lr", "x", "t", "turn", "iturn", "umordent", "lmordent", "string", "hide"]),
+    **dict.fromkeys(["pm", "st", "lr", "x", "t", "turn", "iturn", "umordent", "lmordent", "hide"]),
+    "string": [[], [("n", REQUIRED, None)]],  # 候補の [] は「引数なし」
     "b": _bend(("custom", "bend", "release", "bendrelease", "hold", "prebend", "prebendbend", "prebendrelease")),
     "be": _bend(("custom", "bend", "release", "bendrelease", "hold", "prebend", "prebendbend", "prebendrelease")),
     "lf": [[("n", REQUIRED, ("1", "2", "3", "4", "5"))]],

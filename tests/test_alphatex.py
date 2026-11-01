@@ -1,4 +1,5 @@
 import json
+import re
 from fractions import Fraction
 from pathlib import Path
 
@@ -209,11 +210,47 @@ def test_check_warns_effect_arguments_alphatab_cannot_read():
     ]
 
 
+@pytest.mark.parametrize(
+    "tex",
+    [
+        "(7.3{string}).1",  # 候補の [] は「引数なし」
+        "(7.3{string 3}).1",
+        "(7.3{string 3 pm}).1",
+        "(7.3{ah 5.5}).1",  # ハーモニクスの引数は小数も書ける
+        "(7.3{ah}).1",
+        "(7.3{th 12}).1",
+        "(7.3).4 {restdisplaypitch c4} r.4 {restdisplaypitch c4} r.2",
+    ],
+)
+def test_check_accepts_effects_of_bundled_alphatab(tex):
+    issues, parsed = check_bars({1: tex})
+    assert issues == []
+    assert parsed[1].length() == 4
+
+
+def test_string_effect_reads_optional_number_and_stays_note_only():
+    note = parse_bar("(7.3{string}).1")[0].beats[0].notes[0]
+    assert note.effects == {"string": []} and note.unread == set()
+    note = parse_bar("(7.3{string 3}).1")[0].beats[0].notes[0]
+    assert note.effects == {"string": [3]} and note.unread == set()
+    assert "string" in NOTE_ONLY_EFFECTS
+    assert "restdisplaypitch" in BEAT_EFFECT_ARGS and "restdisplaypitch" not in NOTE_ONLY_EFFECTS
+
+
+def test_string_effect_with_a_word_is_a_warning():
+    # {string a} の a は弦の番号ではない。alphaTab と同じく次の効果の名前として読む
+    issues, _ = check_bars({1: "(7.3{string a}).1"})
+    assert issues and all(i.level == "warning" for i in issues)
+    assert [i.message for i in issues] == ["知らない音の効果 {a}"]
+
+
 def _vendor_signatures(name: str) -> dict:
     js = ALPHATAB.read_text(encoding="utf-8")
-    start = js.index(f"static {name}=t.Zt(") + len(f"static {name}=t.Zt(")
-    table, _ = json.JSONDecoder().raw_decode(js, start)
-    types = {16: "n", 17: "s", 10: "i"}
+    # 縮めたあとの関数名（t.Qt など）は版ごとに変わるので、名前に頼らずに表の始まりを探す
+    found = re.search(rf"static {name}=[\w$.]+\(", js)
+    assert found, f"同梱の alphaTab に static {name} の表が見つかりません"
+    table, _ = json.JSONDecoder().raw_decode(js, found.end())
+    types = {106: "n", 107: "s", 100: "i"}
     return {
         prop: None
         if overloads is None
