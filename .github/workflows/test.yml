@@ -16,12 +16,21 @@ jobs:
       - uses: actions/checkout@v7
       - run: shellcheck setup.sh
 
-  pytest:
+  # テストを組に分けて同時に走らせる。組の選び方は tests/conftest.py にある
+  pytest-split:
     strategy:
+      # 1 組が落ちても、ほかの組の結果が見えるようにする
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        # 組の数は下の env の YOUTAB_TEST_GROUPS と揃える。
+        # 変えるときは両方を揃え、group には 0 .. N-1 を全部並べる
+        group: [0, 1, 2, 3]
     runs-on: ${{ matrix.os }}
+    env:
+      # 組の数。上の matrix の group と揃える
+      YOUTAB_TEST_GROUPS: 4
+      YOUTAB_TEST_GROUP: ${{ matrix.group }}
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.2.0
@@ -29,3 +38,46 @@ jobs:
           enable-cache: true
       - run: uv sync --locked
       - run: uv run pytest
+
+  # 全組の和が全件と一致し、重複がないことを確かめる。
+  # 収集は OS に依らないので ubuntu だけで走らせる
+  pytest-collect:
+    runs-on: ubuntu-latest
+    env:
+      # pytest-split と同じ組の数
+      YOUTAB_TEST_GROUPS: 4
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      # 全件の行は組の環境変数を外して集める（片方だけだと起動が止まる）。
+      # sort に -u を付けないので、2 組に入ったテストがあれば diff が失敗する
+      - run: |
+          set -euo pipefail
+          env -u YOUTAB_TEST_GROUPS -u YOUTAB_TEST_GROUP uv run pytest -n0 --collect-only -q | grep '::' | sort > all.txt
+          for g in $(seq 0 $((YOUTAB_TEST_GROUPS - 1))); do
+            YOUTAB_TEST_GROUP=$g uv run pytest -n0 --collect-only -q | grep '::'
+          done | sort > union.txt
+          test "$(wc -l < all.txt)" -gt 0
+          diff all.txt union.txt
+
+  # 必須チェック pytest (ubuntu-latest) / pytest (macos-latest) を引き継ぐまとめ。
+  # チェック名を「ジョブ ID (matrix の値)」にするため name: は書かない。
+  # pytest-split の結果は両 OS・全組の集約なので、どれか 1 つが落ちれば両方とも失敗になる
+  pytest:
+    needs: [pytest-split, pytest-collect]
+    # 先のジョブが失敗・取り消しでも走らせ、success 以外を失敗として返す
+    if: always()
+    strategy:
+      # 一方の失敗で、もう一方が取り消されないようにする
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    # 判定だけなので、どちらも ubuntu で走らせる（チェック名は matrix の値で決まる）
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          test "${{ needs.pytest-split.result }}" = success
+          test "${{ needs.pytest-collect.result }}" = success
