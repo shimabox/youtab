@@ -1,7 +1,67 @@
+import os
 import threading
 from pathlib import Path
 
 import pytest
+
+GROUPS_ENV = "YOUTAB_TEST_GROUPS"
+GROUP_ENV = "YOUTAB_TEST_GROUP"
+
+
+def _test_group():
+    """環境変数から (組の数, 担当の組) を読む。両方なければ None。不正なら UsageError。"""
+    groups_raw = os.environ.get(GROUPS_ENV)
+    group_raw = os.environ.get(GROUP_ENV)
+    if groups_raw is None and group_raw is None:
+        return None
+    if groups_raw is None or group_raw is None:
+        raise pytest.UsageError(f"{GROUPS_ENV} と {GROUP_ENV} は両方とも設定してください")
+    try:
+        groups = int(groups_raw)
+        group = int(group_raw)
+    except ValueError:
+        raise pytest.UsageError(
+            f"{GROUPS_ENV}={groups_raw!r} と {GROUP_ENV}={group_raw!r} は整数で指定してください"
+        ) from None
+    if groups < 1:
+        raise pytest.UsageError(f"{GROUPS_ENV} は 1 以上にしてください（{groups}）")
+    if not 0 <= group < groups:
+        raise pytest.UsageError(f"{GROUP_ENV} は 0〜{groups - 1} にしてください（{group}）")
+    return groups, group
+
+
+def pytest_configure(config):
+    """組の環境変数の誤りを、収集の前（xdist ではワーカーを起こす前）に知らせて止める。"""
+    _test_group()
+
+
+def pytest_collection_modifyitems(config, items):
+    """テスト全体を N 個の組に分け、そのうち 1 組だけを走らせる。
+
+    CI でテストを複数のジョブに分けて同時に走らせるための仕組み。
+    YOUTAB_TEST_GROUPS が組の数 N、YOUTAB_TEST_GROUP が担当の組（0〜N-1）。
+    収集順で i 番目のテストは i % N の組に入るので、全組を合わせると全件になり、重複もない。
+    両方とも無ければ何もしない（全件を走らせる）。片方だけ・整数でない・範囲外なら起動を止める。
+
+    手元で 1 組だけ走らせる例:
+        env YOUTAB_TEST_GROUPS=4 YOUTAB_TEST_GROUP=0 uv run pytest
+
+    組の中身を調べるときは、addopts の -n auto を打ち消すため -n0 を付ける
+    （例: ... uv run pytest -n0 --collect-only -q）。
+
+    N をテストの件数より大きくすると空の組ができ、その組は pytest が「テストなし」
+    （終了コード 5）として失敗する。
+    """
+    selected = _test_group()
+    if selected is None:
+        return
+    groups, group = selected
+    keep, drop = [], []
+    for i, item in enumerate(items):
+        (keep if i % groups == group else drop).append(item)
+    if drop:
+        config.hook.pytest_deselected(items=drop)
+    items[:] = keep
 
 
 @pytest.fixture(autouse=True)
