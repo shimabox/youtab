@@ -5,6 +5,7 @@ import threading
 from http.server import ThreadingHTTPServer
 
 import pytest
+from conftest import serve_in_thread
 from test_server import call, upload
 
 from youtab import add, pipeline, server
@@ -35,7 +36,7 @@ def app_server(tmp_path, monkeypatch, fake_probe):
     monkeypatch.setattr(pipeline.Job, "run", fake_run)
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     base = f"http://127.0.0.1:{httpd.server_address[1]}"
     yield base, root, ran, app
     httpd.shutdown()

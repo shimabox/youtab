@@ -19,6 +19,7 @@ from youtab import build, cli, documents, pages, paper, pipeline, read, server
 from youtab.agent import AgentResult
 from youtab.agent_settings import Choice
 from youtab.workdir import list_frames, load_meta, read_json, save_meta
+from conftest import serve_in_thread
 from pdfs import image_pdf, locked_pdf, page_pdf
 from synth import write_frames
 
@@ -954,14 +955,13 @@ def test_chosen_job_keeps_its_part_when_retry_sends_no_part(tmp_path, monkeypatc
 
 
 def test_part_is_chosen_through_the_page_api(tmp_path, monkeypatch):
-    import threading
     import urllib.error
     import urllib.request
     from http.server import ThreadingHTTPServer
 
     app, wd, job, _ = waiting_app(tmp_path, monkeypatch)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     url = f"http://127.0.0.1:{httpd.server_address[1]}/api/jobs/{wd.name}"
 
     def post(body, header=True):

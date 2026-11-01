@@ -6,6 +6,7 @@ import types
 from http.server import ThreadingHTTPServer
 
 import pytest
+from conftest import serve_in_thread
 from test_server import call, saved_job, wait_idle
 
 from youtab import pipeline, server
@@ -39,7 +40,7 @@ def served(tmp_path, monkeypatch):
     monkeypatch.setattr(server, "available_engines", lambda: {"claude": True, "codex": True})
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     ns = types.SimpleNamespace(base=f"http://127.0.0.1:{httpd.server_address[1]}", root=root, app=app,
                                release=release, started=started, slow=slow, ran=ran)  # fmt: skip
     yield ns

@@ -8,6 +8,7 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 
 import pytest
+from conftest import serve_in_thread
 
 import youtab
 
@@ -34,7 +35,7 @@ def running_server(tmp_path, monkeypatch, fake_probe):
     monkeypatch.setattr(pipeline.Job, "run", fake_run)
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     base = f"http://127.0.0.1:{httpd.server_address[1]}"
     yield base, root, ran
     httpd.shutdown()
@@ -264,7 +265,7 @@ def served(tmp_path, monkeypatch, fake_probe):
     monkeypatch.setattr(server, "available_engines", lambda: {"claude": True, "codex": True})
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     ns = types.SimpleNamespace(base=f"http://127.0.0.1:{httpd.server_address[1]}", root=root, app=app,
                                release=release, started=started)  # fmt: skip
     yield ns
@@ -1034,7 +1035,7 @@ def test_retry_to_screen_resets_tuning_of_the_chosen_paper_part(idle_app):
 def test_source_mode_is_switched_through_the_retry_api(idle_app):
     job = finished_song(idle_app.root, strip={"band": [240, 350]}, source_choice=AUTO_SCREEN)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(idle_app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     url = f"http://127.0.0.1:{httpd.server_address[1]}/api/jobs/{JOB}/retry"
     try:
         before = meta_of(job)

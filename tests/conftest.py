@@ -1,3 +1,4 @@
+import threading
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,18 @@ def isolate_agent_settings(tmp_path_factory, monkeypatch):
 
 
 PROBED = {"width": 1920, "height": 1080, "duration": 12.5}
+
+SERVE_POLL_INTERVAL = 0.01
+
+
+def serve_in_thread(httpd):
+    """httpd を別スレッドで動かす。止める合図（shutdown）を SERVE_POLL_INTERVAL 秒おきに確かめる。"""
+    threading.Thread(
+        target=httpd.serve_forever,
+        kwargs={"poll_interval": SERVE_POLL_INTERVAL},
+        daemon=True,
+    ).start()
+    return httpd
 
 
 @pytest.fixture

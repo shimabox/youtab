@@ -9,7 +9,7 @@ from http.server import ThreadingHTTPServer
 from urllib.parse import urlencode
 
 import pytest
-from conftest import PROBED
+from conftest import PROBED, serve_in_thread
 from test_server import call, upload
 
 from youtab import add, inside, pipeline, server
@@ -30,7 +30,7 @@ def up(tmp_path, monkeypatch, fake_probe):
     monkeypatch.setattr(server, "available_engines", lambda: {"claude": True, "codex": False})
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     ns = types.SimpleNamespace(base=f"http://127.0.0.1:{httpd.server_address[1]}", port=httpd.server_address[1],
                                root=root, app=app, ran=ran, probed=fake_probe)  # fmt: skip
     yield ns
