@@ -7,6 +7,7 @@ import types
 from http.server import ThreadingHTTPServer
 
 import pytest
+from conftest import serve_in_thread
 from test_server import call, page_section
 from trees import make_outside, snapshot
 
@@ -74,7 +75,7 @@ def served(tmp_path, monkeypatch):
     monkeypatch.setattr(server, "available_engines", lambda: {"claude": True, "codex": True})
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     yield types.SimpleNamespace(base=f"http://127.0.0.1:{httpd.server_address[1]}", root=root, app=app, ran=ran, done=done)
     httpd.shutdown()
 

@@ -8,6 +8,7 @@ import urllib.request
 from http.server import ThreadingHTTPServer
 
 import pytest
+from conftest import serve_in_thread
 from fakes import send
 from test_links import fake_ffmpeg, stages_in
 from trees import make_outside, snapshot
@@ -49,7 +50,7 @@ def files(tmp_path, monkeypatch):
     (wd / f"{JOB}.alphatex").symlink_to(out / "x.alphatex")
     app = server.App(root)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.make_handler(app))
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     yield app, f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()
 

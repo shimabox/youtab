@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 import pytest
-from conftest import PROBED
+from conftest import PROBED, serve_in_thread
 from PIL import Image
 
 from youtab import add, frames, inside
@@ -443,7 +443,7 @@ def test_playlist_pointing_to_http_server_is_refused_without_reaching_it(tmp_pat
     # (b) 中身が手元の HTTP サーバーを指す再生リスト（concat から m3u8 を経て http へ、直接 http へ、m3u8 そのもの）
     Counter.hits = []
     httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Counter)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    serve_in_thread(httpd)
     url = f"http://127.0.0.1:{httpd.server_address[1]}"
     m3u8 = f"#EXTM3U\n#EXT-X-TARGETDURATION:1\n#EXTINF:1,\n{url}/seg.ts\n#EXT-X-ENDLIST\n"
     try:
